@@ -27,9 +27,10 @@ notifies users when a newer build has been deployed.
   they claim their seat when they scan the QR.
 - **Bookmark locations** — add an address / place name / maps link to a
   bookmark; the card shows a tappable pin that opens it in Google Maps.
-- **Cleaner recap** — each person is now a single compact row (name +
-  owes/gets), with the share/paid/deposit breakdown shown inline only where
-  it's non-zero, instead of a tall three-tile grid per person.
+- **Cleaner recap** — the recap now leads with "Settle up" (who pays whom)
+  by default, with an expandable per-person breakdown. Each person is a
+  single compact row (name + owes/gets) showing only non-zero contributions,
+  replacing the tall three-tile grid per person.
 - **Versioning** — visible app version in Settings and an "update available"
   prompt when a new build ships.
 - **Fixes** — deposits: the organizer (deposit holder) no longer sees a
