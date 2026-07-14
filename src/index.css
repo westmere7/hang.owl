@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Palette (light) ---------- */
+:root {
+  --bg: #f2f1fa;
+  --surface: #ffffff;
+  --surface-2: #f7f6fd;
+  --text: #2a2153;
+  --muted: #8b85ad;
+  --border: #e7e4f6;
+
+  --primary: #5433eb;
+  --primary-deep: #3d22bc;
+  --primary-soft: #eeeafe;
+  --on-primary: #ffffff;
+
+  --accent: #ff7a50;
+  --accent-deep: #f25e2e;
+  --accent-soft: #ffede5;
+
+  --success: #16a86c;
+  --success-soft: #e2f7ee;
+  --danger: #e5484d;
+  --danger-soft: #fdebec;
+}
+
+/* ---------- Palette (dark) ---------- */
+.dark {
+  --bg: #120e28;
+  --surface: #1c1638;
+  --surface-2: #251e47;
+  --text: #efedfc;
+  --muted: #9d97c4;
+  --border: #332b5c;
+
+  --primary: #7c63ff;
+  --primary-deep: #5433eb;
+  --primary-soft: #2a2158;
+  --on-primary: #ffffff;
+
+  --accent: #ff8a5e;
+  --accent-deep: #f25e2e;
+  --accent-soft: #3b2540;
+
+  --success: #3ecf8e;
+  --success-soft: #143a2c;
+  --danger: #ff6369;
+  --danger-soft: #43222b;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+
+  --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-xl2: 1.25rem;
+  --radius-xl3: 1.75rem;
+
+  --shadow-card: 0 8px 30px -12px rgb(42 33 83 / 0.14);
+  --shadow-pop: 0 20px 50px -12px rgb(42 33 83 / 0.28);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+  font-optical-sizing: auto;
+}
+
+/* Nicer number rendering for money */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Safe-area padding for mobile bottom nav */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
