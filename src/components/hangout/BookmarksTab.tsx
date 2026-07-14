@@ -120,6 +120,7 @@ export function BookmarksTab({ data }: { data: HangoutData }) {
               description: b.description,
               image_url: b.image_url,
               category: b.category,
+              location: b.location,
               notes: b.notes,
             })
           }}

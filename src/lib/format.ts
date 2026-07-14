@@ -43,6 +43,17 @@ export function domainOf(url: string | null): string {
   }
 }
 
+/**
+ * A link that opens the given location. If it's already a URL (e.g. a
+ * pasted Google Maps link) use it directly; otherwise search Maps for the
+ * address/place name.
+ */
+export function mapsUrl(location: string): string {
+  const trimmed = location.trim()
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`
+}
+
 /** datetime-local input value from an ISO string (local time). */
 export function toLocalInput(iso: string): string {
   const d = new Date(iso)

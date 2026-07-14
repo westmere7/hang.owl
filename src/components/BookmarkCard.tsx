@@ -1,6 +1,6 @@
-import { Check, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { Check, ExternalLink, MapPin, Pencil, Trash2 } from 'lucide-react'
 import { bookmarkCategory } from '../lib/categories'
-import { domainOf } from '../lib/format'
+import { domainOf, mapsUrl } from '../lib/format'
 import type { BookmarkCategory } from '../types'
 import { cn } from './ui'
 
@@ -11,6 +11,7 @@ export interface BookmarkLike {
   description: string | null
   image_url: string | null
   category: BookmarkCategory
+  location: string | null
   notes: string | null
   done?: boolean
 }
@@ -58,16 +59,32 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleDone }: Props
           </span>
         </div>
 
-        {domain && (
-          <a
-            href={bookmark.url ?? '#'}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-accent-deep hover:underline"
-          >
-            <ExternalLink size={11} />
-            {domain}
-          </a>
+        {(domain || bookmark.location) && (
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            {domain && (
+              <a
+                href={bookmark.url ?? '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-accent-deep hover:underline"
+              >
+                <ExternalLink size={11} />
+                {domain}
+              </a>
+            )}
+            {bookmark.location && (
+              <a
+                href={mapsUrl(bookmark.location)}
+                target="_blank"
+                rel="noreferrer"
+                title={`Open in Maps: ${bookmark.location}`}
+                className="inline-flex max-w-[12rem] items-center gap-1 text-xs font-bold text-primary hover:underline"
+              >
+                <MapPin size={11} className="shrink-0" />
+                <span className="truncate">{bookmark.location}</span>
+              </a>
+            )}
+          </div>
         )}
         {(bookmark.notes || bookmark.description) && (
           <p className="mt-1 line-clamp-2 text-xs text-muted">{bookmark.notes || bookmark.description}</p>

@@ -21,6 +21,7 @@ export interface Bookmark {
   description: string | null
   image_url: string | null
   category: BookmarkCategory
+  location: string | null
   notes: string | null
   created_by: string | null
   created_at: string
@@ -64,6 +65,7 @@ export interface HangoutBookmark {
   title: string
   description: string | null
   image_url: string | null
+  location: string | null
   notes: string | null
   done: boolean
   created_by: string | null

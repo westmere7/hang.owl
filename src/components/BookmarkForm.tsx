@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { MapPin, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { BOOKMARK_CATEGORIES } from '../lib/categories'
 import { fetchLinkPreview, normalizeUrl } from '../lib/linkPreview'
@@ -11,6 +11,7 @@ export interface BookmarkValues {
   description: string | null
   image_url: string | null
   category: BookmarkCategory
+  location: string | null
   notes: string | null
 }
 
@@ -33,6 +34,7 @@ export function BookmarkForm({ open, onClose, onSubmit, initial, heading }: Prop
   const [description, setDescription] = useState(initial?.description ?? null)
   const [imageUrl, setImageUrl] = useState(initial?.image_url ?? null)
   const [category, setCategory] = useState<BookmarkCategory>(initial?.category ?? 'visit')
+  const [location, setLocation] = useState(initial?.location ?? '')
   const [fetching, setFetching] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +67,7 @@ export function BookmarkForm({ open, onClose, onSubmit, initial, heading }: Prop
         description: description?.trim() || null,
         image_url: imageUrl,
         category,
+        location: location.trim() || null,
         notes: notes.trim() || null,
       })
       onClose()
@@ -154,6 +157,18 @@ export function BookmarkForm({ open, onClose, onSubmit, initial, heading }: Prop
                 {label}
               </Chip>
             ))}
+          </div>
+        </Field>
+
+        <Field label="Location" hint="Address, place name, or a maps link. Adds a tappable pin to the card.">
+          <div className="flex items-center gap-2">
+            <MapPin size={20} className="shrink-0 text-primary" />
+            <Input
+              placeholder="e.g. 25 Lò Đúc, Hà Nội"
+              value={location}
+              maxLength={200}
+              onChange={(e) => setLocation(e.target.value)}
+            />
           </div>
         </Field>
 

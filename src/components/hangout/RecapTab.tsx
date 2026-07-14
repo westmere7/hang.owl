@@ -1,4 +1,4 @@
-import { ArrowRight, Crown, HandCoins, Info, Pencil, PiggyBank } from 'lucide-react'
+import { ArrowRight, ChevronDown, Crown, HandCoins, Info, Pencil, PiggyBank } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { fmtMoney } from '../../lib/format'
 import { canEditRecap } from '../../lib/permissions'
@@ -15,6 +15,7 @@ import { Avatar, Button, ErrorNote, Field, Input, Modal, Toggle, cn } from '../u
 export function RecapTab({ data }: { data: HangoutData }) {
   const { hangout, me, members, spends } = data
   const [editingMember, setEditingMember] = useState<Member | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
 
   const recap = useMemo(
     () =>
@@ -45,26 +46,9 @@ export function RecapTab({ data }: { data: HangoutData }) {
       <div className="rounded-xl3 bg-surface p-5 shadow-card">
         <p className="text-xs font-extrabold uppercase tracking-wide text-muted">Hangout total</p>
         <p className="mt-0.5 text-3xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</p>
-        <p className="mt-2 flex items-start gap-1.5 text-xs text-muted">
-          <Info size={13} className="mt-0.5 shrink-0" />
-          Deposits are treated as money handed to the organizer. Tap a person to adjust their deposit
-          or override their share.
-        </p>
       </div>
 
-      <div className="space-y-2">
-        {recap.rows.map((row) => (
-          <MemberRow
-            key={row.memberId}
-            row={row}
-            member={memberById.get(row.memberId)}
-            currency={cur}
-            onEdit={editable ? () => setEditingMember(memberById.get(row.memberId) ?? null) : undefined}
-          />
-        ))}
-      </div>
-
-      {/* Settle up */}
+      {/* Settle up is the default view; per-person detail expands from here. */}
       <div className="rounded-xl3 bg-surface p-5 shadow-card">
         <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-muted">
           <HandCoins size={15} className="text-accent-deep" />
@@ -77,10 +61,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
         ) : (
           <ul className="mt-3 space-y-2">
             {recap.settlements.map((s, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3"
-              >
+              <li key={i} className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
                 <Avatar name={s.fromName} size="sm" />
                 <span className="text-sm font-bold text-ink">{s.fromName}</span>
                 <ArrowRight size={15} className="text-muted" />
@@ -92,6 +73,35 @@ export function RecapTab({ data }: { data: HangoutData }) {
               </li>
             ))}
           </ul>
+        )}
+
+        <button
+          onClick={() => setShowDetails((v) => !v)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl py-2 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:bg-surface-2 hover:text-ink"
+          aria-expanded={showDetails}
+        >
+          <ChevronDown size={15} className={cn('transition-transform', showDetails && 'rotate-180')} />
+          {showDetails ? 'Hide breakdown' : 'Per-person breakdown'}
+        </button>
+
+        {showDetails && (
+          <div className="mt-2 space-y-2 border-t border-line pt-3">
+            {editable && (
+              <p className="flex items-center gap-1.5 px-1 pb-1 text-xs text-muted">
+                <Info size={13} className="shrink-0" />
+                Tap a person to set a deposit or override their share.
+              </p>
+            )}
+            {recap.rows.map((row) => (
+              <MemberRow
+                key={row.memberId}
+                row={row}
+                member={memberById.get(row.memberId)}
+                currency={cur}
+                onEdit={editable ? () => setEditingMember(memberById.get(row.memberId) ?? null) : undefined}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -120,59 +130,61 @@ function MemberRow({
 }) {
   const owes = row.balance > 0.005
   const receives = row.balance < -0.005
+
   return (
     <button
       onClick={onEdit}
       disabled={!onEdit}
       className={cn(
-        'w-full rounded-xl3 bg-surface p-4 text-left shadow-card transition',
-        onEdit && 'hover:-translate-y-0.5 hover:shadow-pop',
+        'flex w-full items-center gap-3 rounded-2xl bg-surface-2 p-3 text-left transition',
+        onEdit && 'hover:bg-primary-soft/40',
       )}
     >
-      <div className="flex items-center gap-3">
-        <Avatar name={row.name} />
-        <span className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="truncate text-sm font-extrabold text-ink">{row.name}</span>
-          {member?.is_admin && <Crown size={13} className="shrink-0 text-accent-deep" />}
-        </span>
-        <span
-          className={cn(
-            'rounded-full px-3 py-1 text-sm font-black tabular-nums',
-            owes && 'bg-danger-soft text-danger',
-            receives && 'bg-success-soft text-success',
-            !owes && !receives && 'bg-surface-2 text-muted',
-          )}
-        >
-          {owes
-            ? `owes ${fmtMoney(row.balance, currency)}`
-            : receives
-              ? `gets ${fmtMoney(-row.balance, currency)}`
-              : 'settled'}
-        </span>
-        {onEdit && <Pencil size={14} className="shrink-0 text-muted" />}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <Stat label="Share" value={fmtMoney(row.share, currency)} highlight={row.overridden} />
-        <Stat label="Paid" value={fmtMoney(row.paid, currency)} />
-        <Stat label="Deposit" value={fmtMoney(row.deposit, currency)} />
-      </div>
-      {row.overridden && (
-        <p className="mt-2 text-center text-[11px] font-bold text-accent-deep">
-          Share manually overridden (auto would be {fmtMoney(row.rawShare, currency)})
-        </p>
-      )}
-    </button>
-  )
-}
+      <Avatar name={row.name} />
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={cn('rounded-2xl px-2 py-2', highlight ? 'bg-accent-soft' : 'bg-surface-2')}>
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{label}</p>
-      <p className={cn('mt-0.5 text-sm font-black tabular-nums', highlight ? 'text-accent-deep' : 'text-ink')}>
-        {value}
-      </p>
-    </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-extrabold text-ink">{row.name}</span>
+          {member?.is_admin && <Crown size={12} className="shrink-0 text-accent-deep" />}
+        </div>
+        {/* Breakdown — only the non-zero parts, so most rows stay to one short line. */}
+        <p className="mt-0.5 text-xs text-muted">
+          <span className={cn(row.overridden && 'font-bold text-accent-deep')}>
+            Share {fmtMoney(row.share, currency)}
+            {row.overridden && ' (adjusted)'}
+          </span>
+          {row.paid > 0 && <> · Paid {fmtMoney(row.paid, currency)}</>}
+          {row.deposit > 0 && <> · Deposit {fmtMoney(row.deposit, currency)}</>}
+        </p>
+      </div>
+
+      <div className="shrink-0 text-right">
+        {owes || receives ? (
+          <>
+            <span
+              className={cn(
+                'block text-[10px] font-extrabold uppercase tracking-wide',
+                owes ? 'text-danger' : 'text-success',
+              )}
+            >
+              {owes ? 'Owes' : 'Gets back'}
+            </span>
+            <span
+              className={cn(
+                'block text-base font-black tabular-nums',
+                owes ? 'text-danger' : 'text-success',
+              )}
+            >
+              {fmtMoney(owes ? row.balance : -row.balance, currency)}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Settled</span>
+        )}
+      </div>
+
+      {onEdit && <Pencil size={14} className="shrink-0 self-center text-muted" />}
+    </button>
   )
 }
 
