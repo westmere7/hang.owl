@@ -2,8 +2,9 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { Layout } from './components/Layout'
 import { NameGate } from './components/NameGate'
 import { SettingsPanel } from './components/SettingsPanel'
+import { UpdateBanner } from './components/UpdateBanner'
 import { OwlLogo } from './components/OwlLogo'
-import { ErrorNote, Spinner } from './components/ui'
+import { Button, ErrorNote, Spinner } from './components/ui'
 import { AppProvider, useApp } from './context/AppContext'
 import { isConfigured } from './lib/supabase'
 import { BookmarksPage } from './pages/Bookmarks'
@@ -30,7 +31,13 @@ function Shell() {
         <div className="w-full max-w-md space-y-4 rounded-xl3 bg-surface p-8 shadow-pop">
           <OwlLogo size={48} />
           <h1 className="text-lg font-extrabold text-ink">Couldn't reach Supabase</h1>
+          <p className="text-sm text-muted">
+            This is usually a brief hiccup. Try again in a moment.
+          </p>
           <ErrorNote message={bootError} />
+          <Button full onClick={() => window.location.reload()}>
+            Try again
+          </Button>
         </div>
       </div>
     )
@@ -54,6 +61,7 @@ function Shell() {
       </Routes>
       <NameGate />
       <SettingsPanel />
+      <UpdateBanner />
     </>
   )
 }

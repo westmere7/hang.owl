@@ -11,6 +11,7 @@ import {
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '../types'
 import { isConfigured, supabase } from '../lib/supabase'
+import { errorMessage, retry } from '../lib/errors'
 import {
   cacheName,
   ensureSession,
@@ -105,10 +106,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cancelledRef.current = false
     ;(async () => {
       try {
-        const session = await ensureSession()
+        // The first Supabase call can blip on a cold start — retry before
+        // giving up so a single transient failure doesn't wall off the app.
+        const session = await retry(() => ensureSession())
         await applyUser(session.user)
       } catch (e) {
-        if (!cancelledRef.current) setBootError(e instanceof Error ? e.message : String(e))
+        if (!cancelledRef.current) setBootError(errorMessage(e))
       } finally {
         if (!cancelledRef.current) setReady(true)
       }

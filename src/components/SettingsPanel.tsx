@@ -1,6 +1,7 @@
 import { LogOut, Monitor, Moon, Sun, UserCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp, type ThemePref } from '../context/AppContext'
+import { APP_VERSION, BUILD_COMMIT, BUILD_TIME } from '../lib/version'
 import { AuthModal } from './AuthModal'
 import { Avatar, Button, ErrorNote, Field, Input, Modal, Segmented } from './ui'
 import { OwlLogo } from './OwlLogo'
@@ -105,10 +106,16 @@ export function SettingsPanel() {
 
           <section className="flex items-center gap-3 rounded-xl3 bg-surface-2 p-4">
             <OwlLogo size={40} />
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold text-ink">HangOwl</p>
               <p className="text-xs text-muted">Plan hangouts, save places, split the bill.</p>
             </div>
+            <span
+              className="shrink-0 rounded-full bg-surface px-2.5 py-1 font-mono text-[11px] font-bold text-muted"
+              title={`Commit ${BUILD_COMMIT} · built ${new Date(BUILD_TIME).toLocaleString()}`}
+            >
+              v{APP_VERSION}
+            </span>
           </section>
         </div>
       </Modal>

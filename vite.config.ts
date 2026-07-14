@@ -1,7 +1,18 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { parseOpenGraph } from './supabase/functions/_shared/ogParse'
+
+// ---- Build/version info, injected at build time ----
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as {
+  version: string
+}
+const version = pkg.version
+// Vercel exposes the commit SHA during the build; fall back to "local".
+const commit = (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7) || 'local'
+const buildTime = new Date().toISOString()
+const versionInfo = { version, commit, buildTime }
 
 /**
  * Runs the `link-preview` edge function locally during `npm run dev`, so
@@ -50,6 +61,22 @@ function linkPreviewDev(): Plugin {
   }
 }
 
+/** Emits dist/version.json so a running client can detect new deploys. */
+function emitVersion(): Plugin {
+  return {
+    name: 'hangowl-version',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(versionInfo) })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), linkPreviewDev()],
+  plugins: [react(), tailwindcss(), linkPreviewDev(), emitVersion()],
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __BUILD_COMMIT__: JSON.stringify(commit),
+    __BUILD_TIME__: JSON.stringify(buildTime),
+  },
 })
