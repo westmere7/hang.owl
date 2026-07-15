@@ -58,9 +58,18 @@ export interface RecapResult {
   settlements: Settlement[]
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100
+const roundTo = (n: number, decimals: number) => {
+  const f = 10 ** decimals
+  return Math.round(n * f) / f
+}
 
-export function computeRecap(members: SplitMember[], spends: SplitSpend[]): RecapResult {
+export function computeRecap(
+  members: SplitMember[],
+  spends: SplitSpend[],
+  /** Currency minor-unit digits: 2 for USD, 0 for VND/JPY. */
+  decimals = 2,
+): RecapResult {
+  const rnd = (n: number) => roundTo(n, decimals)
   const byId = new Map(members.map((m) => [m.id, m]))
   const rawShare = new Map<string, number>(members.map((m) => [m.id, 0]))
   const paid = new Map<string, number>(members.map((m) => [m.id, 0]))
@@ -112,26 +121,39 @@ export function computeRecap(members: SplitMember[], spends: SplitSpend[]): Reca
     return {
       memberId: m.id,
       name: m.name,
-      paid: round2(memberPaid),
-      deposit: round2(deposit),
-      rawShare: round2(rawShare.get(m.id) ?? 0),
-      share: round2(share),
+      paid: rnd(memberPaid),
+      deposit: rnd(deposit),
+      rawShare: rnd(rawShare.get(m.id) ?? 0),
+      share: rnd(share),
       overridden: m.override !== null,
-      balance: round2(balance),
+      balance: rnd(balance),
     }
   })
 
-  return { rows, total: round2(total), settlements: settle(rows) }
+  // Rounding each balance can leave the set summing to a few minor units off
+  // zero, which would strand a cent in settlement. Push that residue onto the
+  // largest balance (where a cent is noise) so debts and credits reconcile.
+  const residual = rnd(rows.reduce((sum, r) => sum + r.balance, 0))
+  if (residual !== 0 && rows.length > 0) {
+    let idx = 0
+    for (let i = 1; i < rows.length; i++) {
+      if (Math.abs(rows[i].balance) > Math.abs(rows[idx].balance)) idx = i
+    }
+    rows[idx].balance = rnd(rows[idx].balance - residual)
+  }
+
+  return { rows, total: rnd(total), settlements: settle(rows, decimals) }
 }
 
 /** Greedy settlement: largest debtor pays largest creditor until settled. */
-function settle(rows: MemberRecap[]): Settlement[] {
+function settle(rows: MemberRecap[], decimals: number): Settlement[] {
+  const eps = 0.5 / 10 ** decimals // half a minor unit
   const debtors = rows
-    .filter((r) => r.balance > 0.005)
+    .filter((r) => r.balance > eps)
     .map((r) => ({ ...r, left: r.balance }))
     .sort((a, b) => b.left - a.left)
   const creditors = rows
-    .filter((r) => r.balance < -0.005)
+    .filter((r) => r.balance < -eps)
     .map((r) => ({ ...r, left: -r.balance }))
     .sort((a, b) => b.left - a.left)
 
@@ -140,19 +162,19 @@ function settle(rows: MemberRecap[]): Settlement[] {
   let c = 0
   while (d < debtors.length && c < creditors.length) {
     const amount = Math.min(debtors[d].left, creditors[c].left)
-    if (amount > 0.005) {
+    if (amount > eps) {
       out.push({
         fromId: debtors[d].memberId,
         fromName: debtors[d].name,
         toId: creditors[c].memberId,
         toName: creditors[c].name,
-        amount: round2(amount),
+        amount: roundTo(amount, decimals),
       })
     }
     debtors[d].left -= amount
     creditors[c].left -= amount
-    if (debtors[d].left <= 0.005) d++
-    if (creditors[c].left <= 0.005) c++
+    if (debtors[d].left <= eps) d++
+    if (creditors[c].left <= eps) c++
   }
   return out
 }

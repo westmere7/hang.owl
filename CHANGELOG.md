@@ -27,10 +27,13 @@ notifies users when a newer build has been deployed.
   they claim their seat when they scan the QR.
 - **Bookmark locations** — add an address / place name / maps link to a
   bookmark; the card shows a tappable pin that opens it in Google Maps.
-- **Cleaner recap** — the recap now leads with "Settle up" (who pays whom)
-  by default, with an expandable per-person breakdown. Each person is a
-  single compact row (name + owes/gets) showing only non-zero contributions,
-  replacing the tall three-tile grid per person.
+- **Cleaner recap** — every person is a compact card showing their net
+  (owes / gets back / even); tap to expand their share/paid/deposit breakdown
+  and exactly who they pay or get paid by. Replaces the tall per-person grid
+  and the separate settle-up section.
+- **Currency-accurate money** — amounts now use each currency's natural
+  precision (VND/JPY show whole numbers, USD shows cents), and rounding
+  residue is absorbed so debts and credits reconcile to the cent.
 - **Versioning** — visible app version in Settings and an "update available"
   prompt when a new build ships.
 - **Fixes** — deposits: the organizer (deposit holder) no longer sees a

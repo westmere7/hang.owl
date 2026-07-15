@@ -1,8 +1,8 @@
-import { ArrowRight, ChevronDown, Crown, HandCoins, Info, Pencil, PiggyBank } from 'lucide-react'
+import { ArrowRight, ChevronDown, Crown, Info, Pencil, PiggyBank } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { fmtMoney } from '../../lib/format'
+import { currencyDecimals, fmtMoney } from '../../lib/format'
 import { canEditRecap } from '../../lib/permissions'
-import { computeRecap, type MemberRecap } from '../../lib/split'
+import { computeRecap, type MemberRecap, type Settlement } from '../../lib/split'
 import { supabase } from '../../lib/supabase'
 import type { Member } from '../../types'
 import type { HangoutData } from '../../pages/Hangout'
@@ -15,7 +15,6 @@ import { Avatar, Button, ErrorNote, Field, Input, Modal, Toggle, cn } from '../u
 export function RecapTab({ data }: { data: HangoutData }) {
   const { hangout, me, members, spends } = data
   const [editingMember, setEditingMember] = useState<Member | null>(null)
-  const [showDetails, setShowDetails] = useState(false)
 
   const recap = useMemo(
     () =>
@@ -33,8 +32,9 @@ export function RecapTab({ data }: { data: HangoutData }) {
           spenderMemberId: s.spender_member_id,
           shares: s.spend_shares.map((sh) => ({ memberId: sh.member_id, weight: Number(sh.weight) })),
         })),
+        currencyDecimals(hangout.currency),
       ),
-    [members, spends],
+    [members, spends, hangout.currency],
   )
 
   const editable = canEditRecap(hangout, me)
@@ -46,63 +46,25 @@ export function RecapTab({ data }: { data: HangoutData }) {
       <div className="rounded-xl3 bg-surface p-5 shadow-card">
         <p className="text-xs font-extrabold uppercase tracking-wide text-muted">Hangout total</p>
         <p className="mt-0.5 text-3xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</p>
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
+          <Info size={13} className="shrink-0" />
+          Tap a person to see their breakdown and who to settle with.
+        </p>
       </div>
 
-      {/* Settle up is the default view; per-person detail expands from here. */}
-      <div className="rounded-xl3 bg-surface p-5 shadow-card">
-        <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-muted">
-          <HandCoins size={15} className="text-accent-deep" />
-          Settle up
-        </h3>
-        {recap.settlements.length === 0 ? (
-          <p className="mt-3 text-sm font-semibold text-muted">
-            {recap.total === 0 ? 'Nothing to settle yet — add some spendings first.' : 'All squared away! 🎉'}
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {recap.settlements.map((s, i) => (
-              <li key={i} className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
-                <Avatar name={s.fromName} size="sm" />
-                <span className="text-sm font-bold text-ink">{s.fromName}</span>
-                <ArrowRight size={15} className="text-muted" />
-                <Avatar name={s.toName} size="sm" />
-                <span className="text-sm font-bold text-ink">{s.toName}</span>
-                <span className="ml-auto text-sm font-black tabular-nums text-accent-deep">
-                  {fmtMoney(s.amount, cur)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <button
-          onClick={() => setShowDetails((v) => !v)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl py-2 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:bg-surface-2 hover:text-ink"
-          aria-expanded={showDetails}
-        >
-          <ChevronDown size={15} className={cn('transition-transform', showDetails && 'rotate-180')} />
-          {showDetails ? 'Hide breakdown' : 'Per-person breakdown'}
-        </button>
-
-        {showDetails && (
-          <div className="mt-2 space-y-2 border-t border-line pt-3">
-            {editable && (
-              <p className="flex items-center gap-1.5 px-1 pb-1 text-xs text-muted">
-                <Info size={13} className="shrink-0" />
-                Tap a person to set a deposit or override their share.
-              </p>
-            )}
-            {recap.rows.map((row) => (
-              <MemberRow
-                key={row.memberId}
-                row={row}
-                member={memberById.get(row.memberId)}
-                currency={cur}
-                onEdit={editable ? () => setEditingMember(memberById.get(row.memberId) ?? null) : undefined}
-              />
-            ))}
-          </div>
-        )}
+      {/* Every person gets a card — including those who come out even. Tap to
+          expand their breakdown + who they pay / get paid by. */}
+      <div className="space-y-2">
+        {recap.rows.map((row) => (
+          <PersonCard
+            key={row.memberId}
+            row={row}
+            member={memberById.get(row.memberId)}
+            currency={cur}
+            settlements={recap.settlements}
+            onEdit={editable ? () => setEditingMember(memberById.get(row.memberId) ?? null) : undefined}
+          />
+        ))}
       </div>
 
       {editingMember && (
@@ -117,74 +79,117 @@ export function RecapTab({ data }: { data: HangoutData }) {
   )
 }
 
-function MemberRow({
+/** One expandable card per person. Collapsed: net owes/gets/even. Expanded:
+ *  money breakdown + who they settle with + (admin) an adjust button. */
+function PersonCard({
   row,
   member,
   currency,
+  settlements,
   onEdit,
 }: {
   row: MemberRecap
   member: Member | undefined
   currency: string
+  settlements: Settlement[]
   onEdit?: () => void
 }) {
+  const [open, setOpen] = useState(false)
   const owes = row.balance > 0.005
   const receives = row.balance < -0.005
+  const tone = owes ? 'text-danger' : receives ? 'text-success' : 'text-muted'
+  const pays = settlements.filter((s) => s.fromId === row.memberId)
+  const getsFrom = settlements.filter((s) => s.toId === row.memberId)
 
   return (
-    <button
-      onClick={onEdit}
-      disabled={!onEdit}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-2xl bg-surface-2 p-3 text-left transition',
-        onEdit && 'hover:bg-primary-soft/40',
-      )}
-    >
-      <Avatar name={row.name} />
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-extrabold text-ink">{row.name}</span>
-          {member?.is_admin && <Crown size={12} className="shrink-0 text-accent-deep" />}
-        </div>
-        {/* Breakdown — only the non-zero parts, so most rows stay to one short line. */}
-        <p className="mt-0.5 text-xs text-muted">
-          <span className={cn(row.overridden && 'font-bold text-accent-deep')}>
-            Share {fmtMoney(row.share, currency)}
-            {row.overridden && ' (adjusted)'}
+    <div className="overflow-hidden rounded-xl3 bg-surface shadow-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 p-3.5 text-left transition hover:bg-surface-2"
+        aria-expanded={open}
+      >
+        <Avatar name={row.name} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-extrabold text-ink">{row.name}</span>
+            {member?.is_admin && <Crown size={12} className="shrink-0 text-accent-deep" />}
+          </div>
+          <span className={cn('text-[11px] font-extrabold uppercase tracking-wide', tone)}>
+            {owes ? 'Owes' : receives ? 'Gets back' : 'Even'}
           </span>
-          {row.paid > 0 && <> · Paid {fmtMoney(row.paid, currency)}</>}
-          {row.deposit > 0 && <> · Deposit {fmtMoney(row.deposit, currency)}</>}
-        </p>
-      </div>
+        </div>
+        <span className={cn('shrink-0 text-base font-black tabular-nums', tone)}>
+          {owes || receives ? fmtMoney(Math.abs(row.balance), currency) : '—'}
+        </span>
+        <ChevronDown
+          size={16}
+          className={cn('shrink-0 text-muted transition-transform', open && 'rotate-180')}
+        />
+      </button>
 
-      <div className="shrink-0 text-right">
-        {owes || receives ? (
-          <>
-            <span
-              className={cn(
-                'block text-[10px] font-extrabold uppercase tracking-wide',
-                owes ? 'text-danger' : 'text-success',
-              )}
-            >
-              {owes ? 'Owes' : 'Gets back'}
+      {open && (
+        <div className="space-y-3 border-t border-line px-3.5 py-3">
+          {/* Money breakdown */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <span>
+              <span className="text-muted">Share </span>
+              <span className={cn('font-bold tabular-nums', row.overridden ? 'text-accent-deep' : 'text-ink')}>
+                {fmtMoney(row.share, currency)}
+              </span>
+              {row.overridden && <span className="text-accent-deep"> (adjusted)</span>}
             </span>
-            <span
-              className={cn(
-                'block text-base font-black tabular-nums',
-                owes ? 'text-danger' : 'text-success',
-              )}
-            >
-              {fmtMoney(owes ? row.balance : -row.balance, currency)}
+            <span>
+              <span className="text-muted">Paid </span>
+              <span className="font-bold tabular-nums text-ink">{fmtMoney(row.paid, currency)}</span>
             </span>
-          </>
-        ) : (
-          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Settled</span>
-        )}
-      </div>
+            {row.deposit > 0 && (
+              <span>
+                <span className="text-muted">Deposit </span>
+                <span className="font-bold tabular-nums text-ink">{fmtMoney(row.deposit, currency)}</span>
+              </span>
+            )}
+          </div>
 
-      {onEdit && <Pencil size={14} className="shrink-0 self-center text-muted" />}
-    </button>
+          {/* Who to settle with */}
+          <div className="space-y-1.5">
+            {!owes && !receives ? (
+              <p className="text-xs font-semibold text-muted">All settled — nothing to pay.</p>
+            ) : owes ? (
+              pays.map((s, i) => (
+                <div key={i} className="flex items-center justify-between rounded-2xl bg-surface-2 px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                    <ArrowRight size={13} className="text-danger" />
+                    Pay {s.toName}
+                  </span>
+                  <span className="text-xs font-black tabular-nums text-danger">
+                    {fmtMoney(s.amount, currency)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              getsFrom.map((s, i) => (
+                <div key={i} className="flex items-center justify-between rounded-2xl bg-surface-2 px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                    <Avatar name={s.fromName} size="sm" className="!h-4.5 !w-4.5 !text-[8px] !ring-0" />
+                    {s.fromName} pays you
+                  </span>
+                  <span className="text-xs font-black tabular-nums text-success">
+                    {fmtMoney(s.amount, currency)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {onEdit && (
+            <Button variant="soft" size="sm" onClick={onEdit} full>
+              <Pencil size={14} />
+              Adjust deposit / share
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

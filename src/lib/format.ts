@@ -1,12 +1,21 @@
 export function fmtMoney(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount)
+    // Let Intl use each currency's natural precision (VND/JPY = 0 decimals, USD = 2).
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount)
   } catch {
     return `${amount.toFixed(2)} ${currency}`
+  }
+}
+
+/** Minor-unit digit count for a currency (VND/JPY → 0, USD → 2). */
+export function currencyDecimals(currency: string): number {
+  try {
+    return (
+      new Intl.NumberFormat(undefined, { style: 'currency', currency }).resolvedOptions()
+        .maximumFractionDigits ?? 2
+    )
+  } catch {
+    return 2
   }
 }
 
