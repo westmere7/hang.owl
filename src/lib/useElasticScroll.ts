@@ -36,24 +36,25 @@ export function useElasticScroll<T extends HTMLElement = HTMLElement>() {
       el.style.transform = offset === 0 ? '' : `translate3d(0, ${offset}px, 0)`
     }
 
-    function onTouchStart(e: TouchEvent) {
-      if (e.touches.length !== 1) return
-      if (
+    function isModalActive(): boolean {
+      return !!(
         document.body.style.overflow === 'hidden' ||
-        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
-      ) {
-        return
-      }
+        document.querySelectorAll('[role="dialog"]').length > 0
+      )
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length !== 1 || isModalActive()) return
       touchStartY = e.touches[0].clientY
       isPulling = false
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (e.touches.length !== 1) return
-      if (
-        document.body.style.overflow === 'hidden' ||
-        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
-      ) {
+      if (e.touches.length !== 1 || isModalActive()) {
+        if (isPulling) {
+          applyTransform(0, true)
+          isPulling = false
+        }
         return
       }
       const touchY = e.touches[0].clientY
@@ -80,12 +81,7 @@ export function useElasticScroll<T extends HTMLElement = HTMLElement>() {
     }
 
     function onWheel(e: WheelEvent) {
-      if (
-        document.body.style.overflow === 'hidden' ||
-        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
-      ) {
-        return
-      }
+      if (isModalActive()) return
       const isAtTop = window.scrollY <= 1 && e.deltaY < 0
       const isAtBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 && e.deltaY > 0
 

@@ -440,7 +440,8 @@ export function Modal({
           </button>
         </div>
         <div
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 overscroll-contain touch-pan-y"
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 overscroll-y-contain touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
           onFocus={handleFocus}
         >
           {children}
