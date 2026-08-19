@@ -49,7 +49,7 @@ export function HomePage() {
 
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface-2/80 px-3 py-1 text-xs font-black text-muted mb-3">
-            <span>🦉</span>
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span>{profile?.display_name ? `Hey, ${profile.display_name}` : 'Welcome to HangOwl'}</span>
           </div>
 
