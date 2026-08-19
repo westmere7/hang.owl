@@ -20,7 +20,10 @@ import {
 } from '../lib/identity'
 
 export type ThemePref = 'light' | 'dark' | 'system'
+export type UiScale = 90 | 100 | 110 | 120 | 130
+
 const THEME_KEY = 'hangowl.theme'
+const UI_SCALE_KEY = 'hangowl.ui_scale'
 
 export interface SignUpResult {
   /** True once the account is active and can create hangouts. */
@@ -43,6 +46,8 @@ interface AppState {
   signOut: () => Promise<void>
   theme: ThemePref
   setTheme: (t: ThemePref) => void
+  uiScale: UiScale
+  setUiScale: (scale: UiScale) => void
   settingsOpen: boolean
   setSettingsOpen: (open: boolean) => void
 }
@@ -67,7 +72,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(THEME_KEY)
     return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
   })
+  const [uiScale, setUiScaleState] = useState<UiScale>(() => {
+    const stored = localStorage.getItem(UI_SCALE_KEY)
+    const n = stored ? Number(stored) : 100
+    return [90, 100, 110, 120, 130].includes(n) ? (n as UiScale) : 100
+  })
   const cancelledRef = useRef(false)
+
+  // Apply UI scale on root <html>
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${uiScale}%`
+  }, [uiScale])
+
+  const setUiScale = useCallback((scale: UiScale) => {
+    localStorage.setItem(UI_SCALE_KEY, String(scale))
+    setUiScaleState(scale)
+  }, [])
 
   // Apply .dark on <html>, tracking the OS preference in "system" mode.
   useEffect(() => {
@@ -185,10 +205,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signOut,
       theme,
       setTheme,
+      uiScale,
+      setUiScale,
       settingsOpen,
       setSettingsOpen,
     }),
-    [ready, bootError, userId, profile, isAnon, email, setName, signUp, signIn, signOut, theme, setTheme, settingsOpen],
+    [ready, bootError, userId, profile, isAnon, email, setName, signUp, signIn, signOut, theme, setTheme, uiScale, setUiScale, settingsOpen],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

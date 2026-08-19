@@ -36,7 +36,7 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
 
   return (
-    <div className="space-y-4 pb-44 md:pb-24">
+    <div className="space-y-4 pb-12 md:pb-16">
       {/* Total card */}
       <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3">
         <div>
@@ -101,6 +101,21 @@ export function SpendTab({ data }: { data: HangoutData }) {
             })}
           </div>
         )}
+
+        {canAddSpend(hangout, me) && (
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              size="lg"
+              full
+              onClick={() => setAdding(true)}
+              className="shadow-glow text-sm sm:text-base font-black py-3.5 shadow-xl"
+            >
+              <Plus size={18} strokeWidth={3} />
+              Add spending
+            </Button>
+          </div>
+        )}
       </div>
 
       {spends.length === 0 ? (
@@ -138,23 +153,6 @@ export function SpendTab({ data }: { data: HangoutData }) {
         ))
       )}
 
-      {/* Always visible full-width Add spending button above bottom tabs */}
-      {canAddSpend(hangout, me) && (
-        <div className="fixed inset-x-0 bottom-[4.5rem] z-40 px-3.5 pointer-events-none md:bottom-0 md:pl-64 md:px-8 md:py-3.5 md:border-t md:border-line/60 md:bg-surface/95 md:backdrop-blur-xl md:pointer-events-auto">
-          <div className="mx-auto max-w-4xl pointer-events-auto">
-            <Button
-              variant="primary"
-              size="lg"
-              full
-              onClick={() => setAdding(true)}
-              className="shadow-glow text-sm sm:text-base font-black py-3.5 shadow-2xl"
-            >
-              <Plus size={18} strokeWidth={3} />
-              Add spending
-            </Button>
-          </div>
-        </div>
-      )}
 
       {(adding || editing) && (
         <SpendForm

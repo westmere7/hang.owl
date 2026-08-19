@@ -1,13 +1,13 @@
 import { LogOut, Monitor, Moon, Sun, UserCircle2 } from 'lucide-react'
 import { useState } from 'react'
-import { useApp, type ThemePref } from '../context/AppContext'
+import { useApp, type ThemePref, type UiScale } from '../context/AppContext'
 import { APP_VERSION, BUILD_COMMIT, BUILD_TIME } from '../lib/version'
 import { AuthModal } from './AuthModal'
 import { Avatar, Button, ErrorNote, Field, Input, Modal, Segmented } from './ui'
 import { OwlLogo } from './OwlLogo'
 
 export function SettingsPanel() {
-  const { settingsOpen, setSettingsOpen, theme, setTheme, profile, setName, isAuthed, email, signOut } =
+  const { settingsOpen, setSettingsOpen, theme, setTheme, uiScale, setUiScale, profile, setName, isAuthed, email, signOut } =
     useApp()
   const [name, setNameInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -46,6 +46,25 @@ export function SettingsPanel() {
                   { value: 'light', label: <span className="inline-flex items-center gap-1.5"><Sun size={15} /> Light</span> },
                   { value: 'dark', label: <span className="inline-flex items-center gap-1.5"><Moon size={15} /> Dark</span> },
                   { value: 'system', label: <span className="inline-flex items-center gap-1.5"><Monitor size={15} /> Auto</span> },
+                ]}
+              />
+            </Field>
+          </section>
+
+          <section className="space-y-2">
+            <Field
+              label="Interface Scale (Local view)"
+              hint="Adjust zoom & text size for this device only."
+            >
+              <Segmented<string>
+                value={String(uiScale)}
+                onChange={(v) => setUiScale(Number(v) as UiScale)}
+                options={[
+                  { value: '90', label: '90%' },
+                  { value: '100', label: '100%' },
+                  { value: '110', label: '110%' },
+                  { value: '120', label: '120%' },
+                  { value: '130', label: '130%' },
                 ]}
               />
             </Field>
