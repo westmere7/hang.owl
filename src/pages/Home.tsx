@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AuthModal } from '../components/AuthModal'
 import { Avatar, Button, EmptyState, ErrorNote, Field, Input, Modal, PageLoader, Select, Stepper, cn } from '../components/ui'
 import { useApp } from '../context/AppContext'
-import { CURRENCIES } from '../lib/categories'
+import { CURRENCIES, CURRENCY_LABELS } from '../lib/categories'
 import { dateRange } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import { useAsync } from '../lib/useAsync'
@@ -268,7 +268,7 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
             <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {CURRENCY_LABELS[c] || c}
                 </option>
               ))}
             </Select>

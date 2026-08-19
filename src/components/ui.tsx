@@ -81,10 +81,23 @@ export function Select({ className, children, ...props }: SelectHTMLAttributes<H
   )
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({
+  label,
+  hint,
+  action,
+  children,
+}: {
+  label: string
+  hint?: string
+  action?: ReactNode
+  children: ReactNode
+}) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-muted">{label}</span>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="block text-[11px] font-black uppercase tracking-wider text-muted">{label}</span>
+        {action}
+      </div>
       {children}
       {hint && <span className="mt-1 block text-xs font-semibold text-muted">{hint}</span>}
     </label>

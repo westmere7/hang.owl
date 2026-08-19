@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CURRENCIES } from '../../lib/categories'
+import { CURRENCIES, CURRENCY_LABELS } from '../../lib/categories'
 import { supabase } from '../../lib/supabase'
 import type { Hangout } from '../../types'
 import { Button, ErrorNote, Field, Input, Modal, Select, Toggle } from '../ui'
@@ -113,7 +113,7 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
             <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {CURRENCY_LABELS[c] || c}
                 </option>
               ))}
             </Select>

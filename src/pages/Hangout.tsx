@@ -1,4 +1,4 @@
-import { Bookmark, CalendarDays, QrCode, Receipt, Scale, Settings2, Users, UsersRound } from 'lucide-react'
+import { ArrowLeft, Bookmark, CalendarDays, QrCode, Receipt, Scale, Settings2, Users, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BookmarksTab } from '../components/hangout/BookmarksTab'
@@ -79,7 +79,18 @@ export function HangoutPage() {
   const ended = hangout.status === 'ended'
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
+      {/* Top Exit Navigation */}
+      <div className="flex items-center justify-between">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface px-3.5 py-1.5 text-xs font-black text-ink shadow-sm transition hover:border-primary/40 hover:bg-surface-2 active:scale-95 group"
+        >
+          <ArrowLeft size={14} className="text-muted transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
+          <span>Exit Hangout</span>
+        </Link>
+      </div>
+
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-line/60 bg-gradient-to-br from-surface via-surface to-surface-2 p-5 sm:p-7 shadow-pop">
         <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
@@ -168,24 +179,24 @@ export function HangoutPage() {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs: Places, Spend, Recap (Spend landed by default) */}
       <Segmented<Tab>
         value={tab}
         onChange={setTab}
         options={[
           {
-            value: 'spend',
-            label: (
-              <span className="inline-flex items-center gap-1.5">
-                <Receipt size={15} /> Spend
-              </span>
-            ),
-          },
-          {
             value: 'bookmarks',
             label: (
               <span className="inline-flex items-center gap-1.5">
                 <Bookmark size={15} /> Places
+              </span>
+            ),
+          },
+          {
+            value: 'spend',
+            label: (
+              <span className="inline-flex items-center gap-1.5">
+                <Receipt size={15} /> Spend
               </span>
             ),
           },

@@ -33,4 +33,11 @@ export function spendCategory(value: SpendCategory) {
   return SPEND_CATEGORIES.find((c) => c.value === value) ?? SPEND_CATEGORIES[SPEND_CATEGORIES.length - 1]
 }
 
-export const CURRENCIES = ['USD', 'EUR', 'GBP', 'VND', 'JPY', 'KRW', 'THB', 'SGD', 'AUD', 'CAD']
+export const CURRENCIES = ['USD', 'AUD', 'VND'] as const
+export type CurrencyCode = (typeof CURRENCIES)[number]
+
+export const CURRENCY_LABELS: Record<string, string> = {
+  USD: 'USD ($)',
+  AUD: 'AUD (A$)',
+  VND: 'VND (₫)',
+}
