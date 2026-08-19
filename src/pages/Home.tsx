@@ -320,43 +320,55 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
           </div>
         </Field>
 
-        <Field label="Who's coming?" hint="Name them now so you can assign spends right away — they can still join later by QR. Leave blank to fill in later.">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-2 border border-line/60 px-3.5 py-2.5">
-              <Avatar name={organizerName} size="sm" />
-              <span className="flex-1 truncate text-sm font-extrabold text-ink">{organizerName}</span>
-              <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-black uppercase text-on-primary shadow-sm">
+        <Field label="Who's coming?" hint="Name them now so you can assign spends right away — they can still join later by QR.">
+          <div className="space-y-2.5">
+            {/* Organizer Row */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-line/60 bg-surface-2/70 px-3.5 py-2.5 shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar name={organizerName} size="sm" />
+                <span className="truncate text-sm font-extrabold text-ink">{organizerName}</span>
+              </div>
+              <span className="rounded-full bg-primary/20 text-primary border border-primary/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shrink-0">
                 Organizer
               </span>
             </div>
+
+            {/* Guest Rows */}
             {guestNames.map((value, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <Avatar name={value.trim() || `${i + 1}`} size="sm" />
-                <Input
-                  placeholder={`Guest ${i + 1}`}
-                  value={value}
-                  maxLength={40}
-                  onChange={(e) =>
-                    setGuestNames((prev) => prev.map((n, j) => (j === i ? e.target.value : n)))
-                  }
-                />
+              <div key={i} className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex shrink-0 items-center justify-center pointer-events-none">
+                    <Avatar name={value.trim() || `${i + 1}`} size="sm" />
+                  </div>
+                  <Input
+                    placeholder={`Guest ${i + 1}`}
+                    value={value}
+                    maxLength={40}
+                    onChange={(e) =>
+                      setGuestNames((prev) => prev.map((n, j) => (j === i ? e.target.value : n)))
+                    }
+                    className="pl-14"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => setGuestNames((prev) => prev.filter((_, j) => j !== i))}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-muted transition hover:bg-danger-soft hover:text-danger"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-line/50 bg-surface-2/80 text-muted transition hover:bg-danger-soft hover:text-danger hover:border-danger/40 active:scale-95"
                   aria-label={`Remove guest ${i + 1}`}
+                  title="Remove guest"
                 >
-                  <X size={16} />
+                  <X size={15} strokeWidth={2.5} />
                 </button>
               </div>
             ))}
+
             <button
               type="button"
               onClick={() => setGuestNames((prev) => [...prev, ''])}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-line/60 bg-surface-2 px-3.5 py-2 text-xs font-black text-primary transition hover:bg-primary-soft"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-line/60 bg-surface-2/80 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary-soft active:scale-95"
             >
-              <Plus size={14} />
-              Add another guest
+              <Plus size={15} strokeWidth={2.5} />
+              Add guest slot
             </button>
           </div>
         </Field>
