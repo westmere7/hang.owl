@@ -194,7 +194,7 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
       const initialCap = parseCurrencyInput(capInput)
       const capVal = Number.isFinite(initialCap) && initialCap > 0 ? initialCap : null
 
-      const { data: hangout, error: hErr } = await supabase
+      let { data: hangout, error: hErr } = await supabase
         .from('hangouts')
         .insert({
           name: name.trim(),
@@ -208,7 +208,25 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
         })
         .select('*')
         .single()
-      if (hErr) throw hErr
+
+      if (hErr && (hErr.message?.includes('spending_cap') || hErr.code === '42703')) {
+        const { data: hFallback, error: fallbackErr } = await supabase
+          .from('hangouts')
+          .insert({
+            name: name.trim(),
+            code: newCode(),
+            starts_on: startsOn || null,
+            ends_on: endsOn || null,
+            expected_guests: headcount,
+            currency,
+            admin_id: userId,
+          })
+          .select('*')
+          .single()
+        hangout = hFallback
+        hErr = fallbackErr
+      }
+      if (hErr || !hangout) throw (hErr || new Error('Failed to create hangout'))
 
       if (capVal) {
         localStorage.setItem(`hangowl_cap_${hangout.id}`, String(capVal))

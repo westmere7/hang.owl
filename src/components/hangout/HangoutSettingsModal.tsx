@@ -90,7 +90,7 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
       const parsedCap = parseCurrencyInput(capInput)
       const capVal = Number.isFinite(parsedCap) && parsedCap > 0 ? parsedCap : null
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('hangouts')
         .update({
           name: name.trim(),
@@ -102,6 +102,21 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
           ...perms,
         })
         .eq('id', hangout.id)
+
+      if (error && (error.message?.includes('spending_cap') || error.code === '42703')) {
+        const { error: fallbackErr } = await supabase
+          .from('hangouts')
+          .update({
+            name: name.trim(),
+            starts_on: startsOn || null,
+            ends_on: endsOn || null,
+            expected_guests: guests,
+            currency,
+            ...perms,
+          })
+          .eq('id', hangout.id)
+        error = fallbackErr
+      }
       if (error) throw error
 
       if (capVal) {
