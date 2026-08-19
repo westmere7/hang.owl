@@ -1,4 +1,4 @@
-import { Check, CheckCircle2, ChevronDown, Crown, Info, Minus, Pencil, PiggyBank, Target, X } from 'lucide-react'
+import { Check, CheckCircle2, ChevronDown, Crown, Minus, Pencil, PiggyBank, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { canEditRecap } from '../../lib/permissions'
@@ -20,11 +20,6 @@ export function RecapTab({ data }: { data: HangoutData }) {
   const { hangout, me, members, spends, reload } = data
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const cur = hangout.currency
-
-  const spendingCap = useMemo(() => {
-    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
-    return raw && Number(raw) > 0 ? Number(raw) : 0
-  }, [hangout.id])
 
   const adminMember = members.find((m) => m.is_admin) || members[0]
   const [depositHolderId, setDepositHolderId] = useState<string>(() => {
@@ -72,6 +67,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
   const totalSettlements = recap.settlements.length
   const settledCount = recap.settlements.filter((s) => settledKeys.has(getSettlementKey(s))).length
   const allSettled = totalSettlements > 0 && settledCount === totalSettlements
+  const settlePercent = totalSettlements > 0 ? Math.round((settledCount / totalSettlements) * 100) : 0
 
   async function toggleSettlement(key: string) {
     const next = new Set(settledKeys)
@@ -163,11 +159,6 @@ export function RecapTab({ data }: { data: HangoutData }) {
             <p className="text-[11px] font-black uppercase tracking-wider text-muted">Hangout Total Spent</p>
             <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
               <span className="text-3xl sm:text-4xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</span>
-              {spendingCap > 0 && (
-                <span className="text-xs sm:text-sm font-extrabold text-muted">
-                  / {fmtMoney(spendingCap, cur)}
-                </span>
-              )}
             </div>
           </div>
           {totalSettlements > 0 && (
@@ -184,53 +175,35 @@ export function RecapTab({ data }: { data: HangoutData }) {
           )}
         </div>
 
-        {/* Spending Cap Progress Bar (when cap is configured) */}
-        {spendingCap > 0 && (
+        {/* Settlement Status Progress Bar */}
+        {totalSettlements > 0 && (
           <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-muted flex items-center gap-1.5">
-                <Target size={13} className={recap.total > spendingCap ? 'text-danger' : 'text-primary'} />
-                Budget cap
+                <CheckCircle2 size={13} className={allSettled ? 'text-success' : 'text-primary'} />
+                Settlement status
               </span>
-              <span className={cn('tabular-nums font-black', recap.total > spendingCap ? 'text-danger' : 'text-ink')}>
-                {recap.total > spendingCap
-                  ? `+${fmtMoney(recap.total - spendingCap, cur)} over cap`
-                  : `${fmtMoney(spendingCap - recap.total, cur)} remaining`}
+              <span className={cn('tabular-nums font-black', allSettled ? 'text-success' : 'text-ink')}>
+                {allSettled
+                  ? 'All settled 🎉'
+                  : `${settledCount} of ${totalSettlements} settled (${settlePercent}%)`}
               </span>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
               <div
                 className={cn(
                   'h-full transition-all duration-500 rounded-full',
-                  recap.total > spendingCap
-                    ? 'bg-danger shadow-glow-danger'
-                    : (recap.total / spendingCap) >= 0.8
-                      ? 'bg-warning shadow-glow-warning'
-                      : 'bg-primary shadow-glow',
+                  allSettled
+                    ? 'bg-success shadow-glow-success'
+                    : settledCount > 0
+                      ? 'bg-gradient-to-r from-primary to-success shadow-glow'
+                      : 'bg-primary/50',
                 )}
-                style={{ width: `${Math.min(100, (recap.total / spendingCap) * 100)}%` }}
+                style={{ width: `${Math.max(settledCount > 0 ? 4 : 0, (settledCount / totalSettlements) * 100)}%` }}
               />
             </div>
           </div>
         )}
-
-        {/* Settlement Progress Bar (when no cap is configured) */}
-        {spendingCap === 0 && totalSettlements > 0 && (
-          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-            <div
-              className={cn(
-                'h-full transition-all duration-500',
-                allSettled ? 'bg-success shadow-glow-success' : 'bg-primary',
-              )}
-              style={{ width: `${(settledCount / totalSettlements) * 100}%` }}
-            />
-          </div>
-        )}
-
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted pt-1 border-t border-line/40">
-          <Info size={14} className="shrink-0 text-primary" />
-          Check off payments as they are transferred. Tap any card to expand details.
-        </p>
       </div>
 
       {/* Payers & Receivers Unified Split Lists */}

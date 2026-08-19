@@ -1,4 +1,4 @@
-import { ChevronRight, PartyPopper, PiggyBank, Plus, Target, Users, X } from 'lucide-react'
+import { ChevronRight, PartyPopper, Plus, Target, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthModal } from '../components/AuthModal'
@@ -171,7 +171,6 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
   // Names of the OTHER people (the organizer is always the first member).
   const [guestNames, setGuestNames] = useState<string[]>(['', '', ''])
   const [currency, setCurrency] = useState('USD')
-  const [depositInput, setDepositInput] = useState('')
   const [capInput, setCapInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -207,9 +206,6 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
         .single()
       if (hErr) throw hErr
 
-      const initialDeposit = parseCurrencyInput(depositInput)
-      const depositVal = Number.isFinite(initialDeposit) && initialDeposit > 0 ? initialDeposit : 0
-
       const initialCap = parseCurrencyInput(capInput)
       if (Number.isFinite(initialCap) && initialCap > 0) {
         localStorage.setItem(`hangowl_cap_${hangout.id}`, String(initialCap))
@@ -221,14 +217,14 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
         hangout_id: hangout.id,
         profile_id: userId,
         display_name: organizerName,
-        deposit: depositVal,
+        deposit: 0,
         is_admin: true,
       })
       if (mErr) throw mErr
 
       const placeholders = guestNames
         .map((n, i) => n.trim() || `Guest ${i + 1}`)
-        .map((display_name) => ({ hangout_id: hangout.id, display_name, deposit: depositVal }))
+        .map((display_name) => ({ hangout_id: hangout.id, display_name, deposit: 0 }))
       if (placeholders.length) {
         const { error: pErr } = await supabase.from('hangout_members').insert(placeholders)
         if (pErr) throw pErr
@@ -317,44 +313,6 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
                 onClick={() => setCapInput('')}
                 className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
                 title="Clear spending cap"
-              >
-                <X size={13} strokeWidth={2.5} />
-              </button>
-            )}
-          </div>
-        </Field>
-
-        <Field
-          label={`Deposit per person (${currency})`}
-          hint="Optional upfront deposit collected from each guest."
-          action={
-            depositInput ? (
-              <button
-                type="button"
-                onClick={() => setDepositInput('')}
-                className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
-              >
-                <X size={12} /> Clear
-              </button>
-            ) : undefined
-          }
-        >
-          <div className="relative flex items-center">
-            <PiggyBank size={18} className="absolute left-3.5 text-primary pointer-events-none" />
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder={currency === 'VND' ? '0' : '0.00'}
-              value={depositInput}
-              onChange={(e) => setDepositInput(formatCurrencyInput(e.target.value, currency))}
-              className="pl-10 pr-9"
-            />
-            {depositInput && (
-              <button
-                type="button"
-                onClick={() => setDepositInput('')}
-                className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
-                title="Clear deposit"
               >
                 <X size={13} strokeWidth={2.5} />
               </button>

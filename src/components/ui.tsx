@@ -7,6 +7,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ')
@@ -399,7 +400,7 @@ export function Modal({
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-200"
@@ -415,11 +416,11 @@ export function Modal({
         )}
       >
         {/* Mobile drag handle indicator */}
-        <div className="flex justify-center pt-2.5 pb-1 sm:hidden">
+        <div className="flex justify-center pt-2.5 pb-1 sm:hidden shrink-0">
           <div className="h-1.5 w-12 rounded-full bg-muted/30" />
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-5 pb-2 pt-3 sm:pt-5">
+        <div className="flex items-center justify-between gap-4 px-5 pb-2.5 pt-3 sm:pt-5 shrink-0 border-b border-line/40">
           <h2 className="text-lg font-black text-ink">{title}</h2>
           <button
             onClick={onClose}
@@ -429,10 +430,15 @@ export function Modal({
             <X size={16} />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">{children}</div>
-        {footer && <div className="border-t border-line/60 bg-surface-2/30 px-5 py-4 pb-safe">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 overscroll-contain">{children}</div>
+        {footer && (
+          <div className="shrink-0 border-t border-line/60 bg-surface/95 px-5 py-3.5 pb-safe backdrop-blur-md">
+            {footer}
+          </div>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -28,12 +28,15 @@ function navClass(isActive: boolean, mobile: boolean): string {
   )
 }
 
+import { useElasticScroll } from '../lib/useElasticScroll'
+
 /** Mobile: top brand bar + bottom tab bar. Desktop (md+): left sidebar. */
 export function Layout({ children }: { children: ReactNode }) {
   const { setSettingsOpen, profile } = useApp()
+  const elasticRef = useElasticScroll<HTMLElement>()
 
   return (
-    <div className="min-h-dvh md:flex bg-bg">
+    <div className="min-h-dvh md:flex bg-bg overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col justify-between border-r border-line/60 bg-surface/80 px-4 py-6 backdrop-blur-md md:flex">
         <div className="space-y-8">
@@ -89,14 +92,14 @@ export function Layout({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-4xl flex-1 px-3.5 pb-28 pt-4 sm:px-6 md:px-8 md:pb-12 md:pt-8">
+      {/* Main Content Area with Elastic Spring Overscroll */}
+      <main ref={elasticRef} className="mx-auto w-full max-w-4xl flex-1 px-3.5 pb-28 pt-4 sm:px-6 md:px-8 md:pb-12 md:pt-8 will-change-transform">
         {children}
       </main>
 
       {/* Mobile bottom nav dock */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line/60 bg-surface/90 px-3 pb-safe pt-1.5 backdrop-blur-xl md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around">
+      <nav className="fixed inset-x-0 bottom-0 z-30 h-16 border-t border-line/60 bg-surface/90 px-3 pb-safe pt-1 backdrop-blur-xl md:hidden">
+        <div className="mx-auto flex max-w-md items-center justify-around h-full">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => navClass(isActive, true)}>
               {({ isActive }) => (

@@ -32,6 +32,7 @@ export function HangoutPage() {
   const [qrOpen, setQrOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [guestsOpen, setGuestsOpen] = useState(false)
+  const [rev, setRev] = useState(0)
 
   const { data, loading, error, reload } = useAsync(async () => {
     if (!id) return null
@@ -59,6 +60,11 @@ export function HangoutPage() {
     }
   }, [id, userId])
 
+  const refresh = () => {
+    setRev((r) => r + 1)
+    reload()
+  }
+
   if (loading) return <PageLoader />
   if (error) return <ErrorNote message={error} />
   if (!data) {
@@ -75,7 +81,7 @@ export function HangoutPage() {
 
   const { hangout, members } = data
   const me = members.find((mm) => mm.profile_id === userId) ?? null
-  const shared: HangoutData = { ...data, me, reload }
+  const shared: HangoutData = { ...data, me, reload: refresh }
   const ended = hangout.status === 'ended'
 
   return (
@@ -217,9 +223,9 @@ export function HangoutPage() {
         ]}
       />
 
-      {tab === 'bookmarks' && <BookmarksTab data={shared} />}
-      {tab === 'spend' && <SpendTab data={shared} />}
-      {tab === 'recap' && <RecapTab data={shared} />}
+      {tab === 'bookmarks' && <BookmarksTab key={rev} data={shared} />}
+      {tab === 'spend' && <SpendTab key={rev} data={shared} />}
+      {tab === 'recap' && <RecapTab key={rev} data={shared} />}
 
       <QRModal open={qrOpen} onClose={() => setQrOpen(false)} hangout={hangout} />
       {me?.is_admin && (

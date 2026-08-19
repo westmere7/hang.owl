@@ -14,10 +14,8 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Spend | null>(null)
 
-  const spendingCap = useMemo(() => {
-    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
-    return raw && Number(raw) > 0 ? Number(raw) : 0
-  }, [hangout.id])
+  const rawCap = localStorage.getItem(`hangowl_cap_${hangout.id}`)
+  const spendingCap = rawCap && Number(rawCap) > 0 ? Number(rawCap) : 0
 
   const total = spends.reduce((sum, s) => sum + Number(s.amount), 0)
   const byCategory = useMemo(() => {
@@ -38,7 +36,7 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
 
   return (
-    <div className="space-y-4 pb-40 md:pb-28">
+    <div className="space-y-4 pb-44 md:pb-24">
       {/* Total card */}
       <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3">
         <div>
@@ -140,9 +138,9 @@ export function SpendTab({ data }: { data: HangoutData }) {
         ))
       )}
 
-      {/* Always visible full-width Add spending button at bottom */}
+      {/* Always visible full-width Add spending button above bottom tabs */}
       {canAddSpend(hangout, me) && (
-        <div className="fixed inset-x-0 bottom-20 z-20 px-3.5 pointer-events-none md:bottom-0 md:pl-64 md:px-8 md:py-3.5 md:border-t md:border-line/60 md:bg-surface/95 md:backdrop-blur-xl md:pointer-events-auto">
+        <div className="fixed inset-x-0 bottom-[4.5rem] z-40 px-3.5 pointer-events-none md:bottom-0 md:pl-64 md:px-8 md:py-3.5 md:border-t md:border-line/60 md:bg-surface/95 md:backdrop-blur-xl md:pointer-events-auto">
           <div className="mx-auto max-w-4xl pointer-events-auto">
             <Button
               variant="primary"
