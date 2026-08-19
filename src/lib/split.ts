@@ -105,8 +105,8 @@ export function computeRecap(
     finalShare.set(m.id, raw + extra)
   }
 
-  // Deposits: guests handed them to the deposit holder (organizer), so the
-  // holder's balance absorbs everyone else's deposits.
+  // Deposits: members handed them to the designated deposit holder, so the
+  // holder's balance absorbs deposits collected from everyone else.
   const holder = members.find((m) => m.isDepositHolder)
   const depositsToHolder = members
     .filter((m) => m.id !== holder?.id)
@@ -115,7 +115,7 @@ export function computeRecap(
   const rows: MemberRecap[] = members.map((m) => {
     const share = finalShare.get(m.id) ?? 0
     const memberPaid = paid.get(m.id) ?? 0
-    const deposit = m.id === holder?.id ? 0 : m.deposit
+    const deposit = m.deposit
     let balance = share - memberPaid - deposit
     if (m.id === holder?.id) balance += depositsToHolder
     return {

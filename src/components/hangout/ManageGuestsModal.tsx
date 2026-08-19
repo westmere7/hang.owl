@@ -1,4 +1,4 @@
-import { Check, Crown, Plus, Trash2, UserRound } from 'lucide-react'
+import { Check, Clock, Crown, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { Member } from '../../types'
@@ -13,9 +13,8 @@ interface Props {
 }
 
 /**
- * Admin roster management: add named guests, rename anyone, remove people.
- * Named guests are placeholder members (no profile_id) until they scan the
- * QR — but they can be assigned spends and billed right away.
+ * Admin roster management: add guests, rename anyone, remove people.
+ * Unclaimed guests show "Not joined" until they scan the QR / open the link.
  */
 export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }: Props) {
   const [newName, setNewName] = useState('')
@@ -90,7 +89,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
                     ? 'bg-warning-soft text-warning border border-warning/30'
                     : m.profile_id
                       ? 'bg-success-soft text-success border border-success/30'
-                      : 'bg-primary-soft text-primary border border-primary/20',
+                      : 'bg-surface-2 text-muted border border-line/60',
                 )}
               >
                 {m.is_admin ? (
@@ -99,11 +98,11 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
                   </>
                 ) : m.profile_id ? (
                   <>
-                    <Check size={10} /> Joined
+                    <Check size={10} strokeWidth={2.5} /> Joined
                   </>
                 ) : (
                   <>
-                    <UserRound size={10} /> Named
+                    <Clock size={10} /> Not joined
                   </>
                 )}
               </span>

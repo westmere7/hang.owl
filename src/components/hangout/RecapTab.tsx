@@ -1,4 +1,4 @@
-import { Check, CheckCircle2, ChevronDown, Crown, Info, Minus, Pencil, PiggyBank } from 'lucide-react'
+import { Check, CheckCircle2, ChevronDown, Crown, Info, Minus, Pencil, PiggyBank, Target, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { canEditRecap } from '../../lib/permissions'
@@ -21,6 +21,16 @@ export function RecapTab({ data }: { data: HangoutData }) {
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const cur = hangout.currency
 
+  const spendingCap = useMemo(() => {
+    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
+    return raw && Number(raw) > 0 ? Number(raw) : 0
+  }, [hangout.id])
+
+  const adminMember = members.find((m) => m.is_admin) || members[0]
+  const [depositHolderId, setDepositHolderId] = useState<string>(() => {
+    return localStorage.getItem(`hangowl_holder_${hangout.id}`) || adminMember?.id || ''
+  })
+
   const recap = useMemo(
     () =>
       computeRecap(
@@ -29,7 +39,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
           name: m.display_name,
           deposit: Number(m.deposit),
           override: m.share_override === null ? null : Number(m.share_override),
-          isDepositHolder: m.is_admin,
+          isDepositHolder: m.id === depositHolderId,
         })),
         spends.map((s) => ({
           id: s.id,
@@ -39,7 +49,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
         })),
         currencyDecimals(hangout.currency),
       ),
-    [members, spends, hangout.currency],
+    [members, spends, hangout.currency, depositHolderId],
   )
 
   // Track checked settlements in localStorage
@@ -147,11 +157,18 @@ export function RecapTab({ data }: { data: HangoutData }) {
       )}
 
       {/* Total spent summary card */}
-      <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3">
+      <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3.5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[11px] font-black uppercase tracking-wider text-muted">Hangout Total Spent</p>
-            <p className="mt-0.5 text-3xl sm:text-4xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</p>
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+              <span className="text-3xl sm:text-4xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</span>
+              {spendingCap > 0 && (
+                <span className="text-xs sm:text-sm font-extrabold text-muted">
+                  / {fmtMoney(spendingCap, cur)}
+                </span>
+              )}
+            </div>
           </div>
           {totalSettlements > 0 && (
             <span
@@ -167,7 +184,38 @@ export function RecapTab({ data }: { data: HangoutData }) {
           )}
         </div>
 
-        {totalSettlements > 0 && (
+        {/* Spending Cap Progress Bar (when cap is configured) */}
+        {spendingCap > 0 && (
+          <div className="space-y-1.5 pt-0.5">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-muted flex items-center gap-1.5">
+                <Target size={13} className={recap.total > spendingCap ? 'text-danger' : 'text-primary'} />
+                Budget cap
+              </span>
+              <span className={cn('tabular-nums font-black', recap.total > spendingCap ? 'text-danger' : 'text-ink')}>
+                {recap.total > spendingCap
+                  ? `+${fmtMoney(recap.total - spendingCap, cur)} over cap`
+                  : `${fmtMoney(spendingCap - recap.total, cur)} remaining`}
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className={cn(
+                  'h-full transition-all duration-500 rounded-full',
+                  recap.total > spendingCap
+                    ? 'bg-danger shadow-glow-danger'
+                    : (recap.total / spendingCap) >= 0.8
+                      ? 'bg-warning shadow-glow-warning'
+                      : 'bg-primary shadow-glow',
+                )}
+                style={{ width: `${Math.min(100, (recap.total / spendingCap) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Settlement Progress Bar (when no cap is configured) */}
+        {spendingCap === 0 && totalSettlements > 0 && (
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
             <div
               className={cn(
@@ -179,7 +227,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
           </div>
         )}
 
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted pt-1">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted pt-1 border-t border-line/40">
           <Info size={14} className="shrink-0 text-primary" />
           Check off payments as they are transferred. Tap any card to expand details.
         </p>
@@ -270,6 +318,12 @@ export function RecapTab({ data }: { data: HangoutData }) {
         <AdjustModal
           member={editingMember}
           currency={cur}
+          isDepositHolder={editingMember.id === depositHolderId}
+          onSetDepositHolder={(isHolder) => {
+            const nextId = isHolder ? editingMember.id : adminMember?.id || ''
+            setDepositHolderId(nextId)
+            localStorage.setItem(`hangowl_holder_${hangout.id}`, nextId)
+          }}
           onClose={() => setEditingMember(null)}
           onSaved={reload}
         />
@@ -546,25 +600,29 @@ function PersonCard({
 function AdjustModal({
   member,
   currency,
+  isDepositHolder,
+  onSetDepositHolder,
   onClose,
   onSaved,
 }: {
   member: Member
   currency: string
+  isDepositHolder: boolean
+  onSetDepositHolder: (isHolder: boolean) => void
   onClose: () => void
   onSaved: () => void
 }) {
-  const isHolder = member.is_admin
   const [deposit, setDeposit] = useState(() => (member.deposit ? formatCurrencyInput(member.deposit, currency) : ''))
   const [useOverride, setUseOverride] = useState(member.share_override !== null)
   const [override, setOverride] = useState(() =>
     member.share_override !== null ? formatCurrencyInput(member.share_override, currency) : '',
   )
+  const [holder, setHolder] = useState(isDepositHolder)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
-    const dep = isHolder ? 0 : parseCurrencyInput(deposit)
+    const dep = parseCurrencyInput(deposit)
     const ovr = useOverride ? parseCurrencyInput(override) : null
     if (!Number.isFinite(dep) || dep < 0 || (useOverride && (!Number.isFinite(ovr!) || ovr! < 0))) {
       setError('Amounts must be valid non-negative numbers.')
@@ -578,6 +636,11 @@ function AdjustModal({
         .update({ deposit: dep, share_override: ovr })
         .eq('id', member.id)
       if (error) throw error
+
+      if (holder !== isDepositHolder) {
+        onSetDepositHolder(holder)
+      }
+
       onSaved()
       onClose()
     } catch (e) {
@@ -598,33 +661,52 @@ function AdjustModal({
       }
     >
       <div className="space-y-4 pb-2">
-        {isHolder ? (
-          <div className="flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary-soft/60 p-3.5">
-            <PiggyBank size={18} className="mt-0.5 shrink-0 text-primary" />
-            <p className="text-xs font-bold text-ink">
-              You're the organizer, so you <span className="font-black">hold</span> the group's
-              deposits — you can't deposit to yourself. Open each{' '}
-              <span className="font-black">guest</span> instead and enter what they handed you
-              upfront.
-            </p>
+        <Field
+          label={`Deposit (${currency})`}
+          hint="Money this person contributed upfront as a deposit."
+          action={
+            deposit ? (
+              <button
+                type="button"
+                onClick={() => setDeposit('')}
+                className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
+              >
+                <X size={12} /> Clear
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="relative flex items-center">
+            <PiggyBank size={18} className="absolute left-3.5 text-primary pointer-events-none" />
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder={currency === 'VND' ? '0' : '0.00'}
+              value={deposit}
+              onChange={(e) => setDeposit(formatCurrencyInput(e.target.value, currency))}
+              className="pl-10 pr-9"
+            />
+            {deposit && (
+              <button
+                type="button"
+                onClick={() => setDeposit('')}
+                className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
+                title="Clear deposit"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            )}
           </div>
-        ) : (
-          <Field
-            label={`Deposit (${currency})`}
-            hint="Money this person already handed to the organizer upfront."
-          >
-            <div className="flex items-center gap-2">
-              <PiggyBank size={20} className="shrink-0 text-primary" />
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder={currency === 'VND' ? '0' : '0.00'}
-                value={deposit}
-                onChange={(e) => setDeposit(formatCurrencyInput(e.target.value, currency))}
-              />
-            </div>
-          </Field>
-        )}
+        </Field>
+
+        <div className="rounded-2xl border border-line/60 bg-surface-2/60 p-3">
+          <Toggle
+            checked={holder}
+            onChange={setHolder}
+            label="Holds the group deposit"
+            description="If enabled, this person holds the collected upfront cash pool for the group."
+          />
+        </div>
 
         <div className="rounded-2xl border border-line/60 bg-surface-2/60 p-3">
           <Toggle

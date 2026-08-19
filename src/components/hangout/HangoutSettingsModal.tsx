@@ -1,25 +1,42 @@
+import { PiggyBank, Target, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CURRENCIES, CURRENCY_LABELS } from '../../lib/categories'
+import { fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
-import type { Hangout } from '../../types'
+import type { Hangout, Member } from '../../types'
 import { Button, ErrorNote, Field, Input, Modal, Select, Toggle } from '../ui'
 
 interface Props {
   open: boolean
   onClose: () => void
   hangout: Hangout
+  members: Member[]
   reload: () => void
 }
 
-/** Admin-only: rename, dates, guest count, currency, guest permissions, end/delete. */
-export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) {
+/** Admin-only: rename, dates, guest count, currency, budget cap, deposit settings, guest permissions, end/delete. */
+export function HangoutSettingsModal({ open, onClose, hangout, members, reload }: Props) {
   const navigate = useNavigate()
   const [name, setName] = useState(hangout.name)
   const [startsOn, setStartsOn] = useState(hangout.starts_on ?? '')
   const [endsOn, setEndsOn] = useState(hangout.ends_on ?? '')
   const [guests, setGuests] = useState(hangout.expected_guests)
   const [currency, setCurrency] = useState(hangout.currency)
+
+  const [capInput, setCapInput] = useState(() => {
+    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
+    return raw && Number(raw) > 0 ? formatCurrencyInput(Number(raw), hangout.currency) : ''
+  })
+
+  const adminMember = members.find((m) => m.is_admin) || members[0]
+  const [depositHolderId, setDepositHolderId] = useState<string>(() => {
+    return localStorage.getItem(`hangowl_holder_${hangout.id}`) || adminMember?.id || ''
+  })
+  const [batchDeposit, setBatchDeposit] = useState('')
+  const [applyingBatch, setApplyingBatch] = useState(false)
+  const [batchMsg, setBatchMsg] = useState<string | null>(null)
+
   const [perms, setPerms] = useState({
     guest_can_add_spend: hangout.guest_can_add_spend,
     guest_can_edit_spend: hangout.guest_can_edit_spend,
@@ -46,12 +63,64 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
         })
         .eq('id', hangout.id)
       if (error) throw error
+
+      const parsedCap = parseCurrencyInput(capInput)
+      if (Number.isFinite(parsedCap) && parsedCap > 0) {
+        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(parsedCap))
+      } else {
+        localStorage.removeItem(`hangowl_cap_${hangout.id}`)
+      }
+
+      if (depositHolderId) {
+        localStorage.setItem(`hangowl_holder_${hangout.id}`, depositHolderId)
+      }
+
       reload()
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function applyDepositToAll() {
+    const val = parseCurrencyInput(batchDeposit)
+    if (!Number.isFinite(val) || val < 0) return
+    setApplyingBatch(true)
+    setBatchMsg(null)
+    try {
+      const { error } = await supabase
+        .from('hangout_members')
+        .update({ deposit: val })
+        .eq('hangout_id', hangout.id)
+      if (error) throw error
+      setBatchMsg(`Updated all ${members.length} members to ${fmtMoney(val, currency)} deposit!`)
+      reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setApplyingBatch(false)
+    }
+  }
+
+  async function clearAllDeposits() {
+    if (!window.confirm('Remove deposits for all members?')) return
+    setApplyingBatch(true)
+    setBatchMsg(null)
+    try {
+      const { error } = await supabase
+        .from('hangout_members')
+        .update({ deposit: 0 })
+        .eq('hangout_id', hangout.id)
+      if (error) throw error
+      setBatchDeposit('')
+      setBatchMsg('Removed deposits for all members!')
+      reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setApplyingBatch(false)
     }
   }
 
@@ -117,6 +186,127 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
                 </option>
               ))}
             </Select>
+          </Field>
+        </div>
+
+        <Field
+          label={`Spending cap / Budget (${currency})`}
+          hint="Optional budget limit. Displays progress in the total spent recap."
+          action={
+            capInput ? (
+              <button
+                type="button"
+                onClick={() => setCapInput('')}
+                className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
+              >
+                <X size={12} /> Clear
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="relative flex items-center">
+            <Target size={18} className="absolute left-3.5 text-primary pointer-events-none" />
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder={currency === 'VND' ? '0' : '0.00'}
+              value={capInput}
+              onChange={(e) => setCapInput(formatCurrencyInput(e.target.value, currency))}
+              className="pl-10 pr-9"
+            />
+            {capInput && (
+              <button
+                type="button"
+                onClick={() => setCapInput('')}
+                className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
+                title="Clear spending cap"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </Field>
+
+        {/* Deposit Settings Section */}
+        <div className="rounded-2xl border border-line/60 bg-surface-2/60 p-3.5 space-y-3">
+          <div className="flex items-center gap-2">
+            <PiggyBank size={16} className="text-primary shrink-0" />
+            <p className="text-xs font-black uppercase tracking-wider text-muted">
+              Deposit Settings
+            </p>
+          </div>
+
+          <Field
+            label="Who holds the group deposit?"
+            hint="Anyone in the group (host or guest) can hold the upfront cash pool."
+          >
+            <Select value={depositHolderId} onChange={(e) => setDepositHolderId(e.target.value)}>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.display_name} {m.is_admin ? '(Host)' : ''}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field
+            label={`Set deposit for all members (${currency})`}
+            hint="Quickly apply or update the upfront deposit for everyone in the hangout."
+            action={
+              batchDeposit ? (
+                <button
+                  type="button"
+                  onClick={() => setBatchDeposit('')}
+                  className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
+                >
+                  <X size={12} /> Clear
+                </button>
+              ) : undefined
+            }
+          >
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 flex items-center">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={currency === 'VND' ? '0' : '0.00'}
+                  value={batchDeposit}
+                  onChange={(e) => setBatchDeposit(formatCurrencyInput(e.target.value, currency))}
+                  className="pr-8"
+                />
+                {batchDeposit && (
+                  <button
+                    type="button"
+                    onClick={() => setBatchDeposit('')}
+                    className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
+                    title="Clear"
+                  >
+                    <X size={12} strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="soft"
+                size="md"
+                disabled={applyingBatch || !batchDeposit.trim()}
+                onClick={() => void applyDepositToAll()}
+                className="shrink-0"
+              >
+                {applyingBatch ? 'Applying…' : 'Apply to all'}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              {batchMsg && <p className="text-xs font-bold text-success">{batchMsg}</p>}
+              <button
+                type="button"
+                onClick={() => void clearAllDeposits()}
+                disabled={applyingBatch}
+                className="ml-auto text-[11px] font-black text-danger/80 hover:text-danger underline transition select-none"
+              >
+                Remove deposits
+              </button>
+            </div>
           </Field>
         </div>
 

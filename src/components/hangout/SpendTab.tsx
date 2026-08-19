@@ -1,4 +1,4 @@
-import { Camera, Pencil, Plus, Receipt, RotateCcw, Users, X } from 'lucide-react'
+import { Camera, Pencil, Plus, Receipt, RotateCcw, Target, Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { SPEND_CATEGORIES, spendCategory } from '../../lib/categories'
@@ -13,6 +13,11 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const { hangout, me, members, spends, reload } = data
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Spend | null>(null)
+
+  const spendingCap = useMemo(() => {
+    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
+    return raw && Number(raw) > 0 ? Number(raw) : 0
+  }, [hangout.id])
 
   const total = spends.reduce((sum, s) => sum + Number(s.amount), 0)
   const byCategory = useMemo(() => {
@@ -33,23 +38,53 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-40 md:pb-28">
       {/* Total card */}
-      <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-muted">Total spent</p>
-            <p className="mt-0.5 text-3xl sm:text-4xl font-black tabular-nums text-ink">
+      <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted">Total spent</p>
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+            <span className="text-3xl sm:text-4xl font-black tabular-nums text-ink">
               {fmtMoney(total, hangout.currency)}
-            </p>
+            </span>
+            {spendingCap > 0 && (
+              <span className="text-xs sm:text-sm font-extrabold text-muted">
+                / {fmtMoney(spendingCap, hangout.currency)}
+              </span>
+            )}
           </div>
-          {canAddSpend(hangout, me) && (
-            <Button variant="primary" onClick={() => setAdding(true)} className="shadow-glow">
-              <Plus size={16} />
-              Add spending
-            </Button>
-          )}
         </div>
+
+        {/* Spending Cap Progress Bar (when cap is set) */}
+        {spendingCap > 0 && (
+          <div className="space-y-1.5 pt-0.5">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-muted flex items-center gap-1.5">
+                <Target size={13} className={total > spendingCap ? 'text-danger' : 'text-primary'} />
+                Budget cap
+              </span>
+              <span className={cn('tabular-nums font-black', total > spendingCap ? 'text-danger' : 'text-ink')}>
+                {total > spendingCap
+                  ? `+${fmtMoney(total - spendingCap, hangout.currency)} over cap`
+                  : `${fmtMoney(spendingCap - total, hangout.currency)} remaining`}
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className={cn(
+                  'h-full transition-all duration-500 rounded-full',
+                  total > spendingCap
+                    ? 'bg-danger shadow-glow-danger'
+                    : (total / spendingCap) >= 0.8
+                      ? 'bg-warning shadow-glow-warning'
+                      : 'bg-primary shadow-glow',
+                )}
+                style={{ width: `${Math.min(100, (total / spendingCap) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {byCategory.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-line/50">
             {byCategory.map(([cat, amount]) => {
@@ -103,6 +138,24 @@ export function SpendTab({ data }: { data: HangoutData }) {
             </div>
           </section>
         ))
+      )}
+
+      {/* Always visible full-width Add spending button at bottom */}
+      {canAddSpend(hangout, me) && (
+        <div className="fixed inset-x-0 bottom-20 z-20 px-3.5 pointer-events-none md:bottom-0 md:pl-64 md:px-8 md:py-3.5 md:border-t md:border-line/60 md:bg-surface/95 md:backdrop-blur-xl md:pointer-events-auto">
+          <div className="mx-auto max-w-4xl pointer-events-auto">
+            <Button
+              variant="primary"
+              size="lg"
+              full
+              onClick={() => setAdding(true)}
+              className="shadow-glow text-sm sm:text-base font-black py-3.5 shadow-2xl"
+            >
+              <Plus size={18} strokeWidth={3} />
+              Add spending
+            </Button>
+          </div>
+        </div>
       )}
 
       {(adding || editing) && (

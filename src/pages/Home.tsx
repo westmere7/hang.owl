@@ -1,11 +1,11 @@
-import { ChevronRight, PartyPopper, Plus, Users, X } from 'lucide-react'
+import { ChevronRight, PartyPopper, PiggyBank, Plus, Target, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthModal } from '../components/AuthModal'
 import { Avatar, Button, EmptyState, ErrorNote, Field, Input, Modal, PageLoader, Select, Stepper, cn } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { CURRENCIES, CURRENCY_LABELS } from '../lib/categories'
-import { dateRange } from '../lib/format'
+import { dateRange, formatCurrencyInput, parseCurrencyInput } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import { useAsync } from '../lib/useAsync'
 import type { Hangout } from '../types'
@@ -137,7 +137,7 @@ function HangoutRow({ hangout }: { hangout: HangoutWithMembers }) {
               Ended
             </span>
           ) : (
-            <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
+            <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
               Active
             </span>
           )}
@@ -171,6 +171,8 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
   // Names of the OTHER people (the organizer is always the first member).
   const [guestNames, setGuestNames] = useState<string[]>(['', '', ''])
   const [currency, setCurrency] = useState('USD')
+  const [depositInput, setDepositInput] = useState('')
+  const [capInput, setCapInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -205,19 +207,28 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
         .single()
       if (hErr) throw hErr
 
+      const initialDeposit = parseCurrencyInput(depositInput)
+      const depositVal = Number.isFinite(initialDeposit) && initialDeposit > 0 ? initialDeposit : 0
+
+      const initialCap = parseCurrencyInput(capInput)
+      if (Number.isFinite(initialCap) && initialCap > 0) {
+        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(initialCap))
+      }
+
       // The organizer is the admin member; named guests become placeholder
       // members (profile_id null) they can claim later by scanning the QR.
       const { error: mErr } = await supabase.from('hangout_members').insert({
         hangout_id: hangout.id,
         profile_id: userId,
         display_name: organizerName,
+        deposit: depositVal,
         is_admin: true,
       })
       if (mErr) throw mErr
 
       const placeholders = guestNames
         .map((n, i) => n.trim() || `Guest ${i + 1}`)
-        .map((display_name) => ({ hangout_id: hangout.id, display_name }))
+        .map((display_name) => ({ hangout_id: hangout.id, display_name, deposit: depositVal }))
       if (placeholders.length) {
         const { error: pErr } = await supabase.from('hangout_members').insert(placeholders)
         if (pErr) throw pErr
@@ -274,6 +285,82 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
             </Select>
           </Field>
         </div>
+
+        <Field
+          label={`Spending cap / Budget (${currency})`}
+          hint="Optional budget cap. Shows visual progress as spendings are recorded."
+          action={
+            capInput ? (
+              <button
+                type="button"
+                onClick={() => setCapInput('')}
+                className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
+              >
+                <X size={12} /> Clear
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="relative flex items-center">
+            <Target size={18} className="absolute left-3.5 text-primary pointer-events-none" />
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder={currency === 'VND' ? '0' : '0.00'}
+              value={capInput}
+              onChange={(e) => setCapInput(formatCurrencyInput(e.target.value, currency))}
+              className="pl-10 pr-9"
+            />
+            {capInput && (
+              <button
+                type="button"
+                onClick={() => setCapInput('')}
+                className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
+                title="Clear spending cap"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </Field>
+
+        <Field
+          label={`Deposit per person (${currency})`}
+          hint="Optional upfront deposit collected from each guest."
+          action={
+            depositInput ? (
+              <button
+                type="button"
+                onClick={() => setDepositInput('')}
+                className="flex items-center gap-1 text-[11px] font-black text-muted hover:text-danger transition select-none"
+              >
+                <X size={12} /> Clear
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="relative flex items-center">
+            <PiggyBank size={18} className="absolute left-3.5 text-primary pointer-events-none" />
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder={currency === 'VND' ? '0' : '0.00'}
+              value={depositInput}
+              onChange={(e) => setDepositInput(formatCurrencyInput(e.target.value, currency))}
+              className="pl-10 pr-9"
+            />
+            {depositInput && (
+              <button
+                type="button"
+                onClick={() => setDepositInput('')}
+                className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-muted hover:bg-line/60 hover:text-ink transition"
+                title="Clear deposit"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </Field>
 
         <Field label="Who's coming?" hint="Name them now so you can assign spends right away — they can still join later by QR. Leave blank to fill in later.">
           <div className="space-y-2">

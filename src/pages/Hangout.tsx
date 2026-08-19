@@ -1,4 +1,4 @@
-import { ArrowLeft, Bookmark, CalendarDays, QrCode, Receipt, Scale, Settings2, Users, UsersRound } from 'lucide-react'
+import { ArrowLeft, Bookmark, QrCode, Receipt, Scale, Settings2, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BookmarksTab } from '../components/hangout/BookmarksTab'
@@ -80,93 +80,99 @@ export function HangoutPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {/* Top Exit Navigation */}
-      <div className="flex items-center justify-between">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface px-3.5 py-1.5 text-xs font-black text-ink shadow-sm transition hover:border-primary/40 hover:bg-surface-2 active:scale-95 group"
-        >
-          <ArrowLeft size={14} className="text-muted transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
-          <span>Exit Hangout</span>
-        </Link>
-      </div>
+      {/* Streamlined Compact Header Bar */}
+      <div className="rounded-2xl border border-line/60 bg-surface p-3 sm:p-3.5 shadow-card">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: Back button + Hangout name & info */}
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <Link
+              to="/"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-line/60 bg-surface-2/80 text-muted transition hover:border-primary/40 hover:bg-surface-2 hover:text-ink active:scale-95 group"
+              title="Exit hangout"
+            >
+              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
+            </Link>
 
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-line/60 bg-gradient-to-br from-surface via-surface to-surface-2 p-5 sm:p-7 shadow-pop">
-        <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 right-20 h-36 w-36 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-ink">
-                {hangout.name}
-              </h1>
-              {ended ? (
-                <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-muted border border-line/40">
-                  Ended
-                </span>
-              ) : (
-                <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-success border border-success/30">
-                  Active
-                </span>
-              )}
-            </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm font-semibold text-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays size={14} className="text-primary" />
-                {dateRange(hangout.starts_on, hangout.ends_on)}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Users size={14} className="text-primary" />
-                {members.length}/{hangout.expected_guests} guests
-              </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-base sm:text-lg font-black tracking-tight text-ink">
+                  {hangout.name}
+                </h1>
+                {ended ? (
+                  <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-black uppercase text-muted border border-line/40">
+                    Ended
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
+                    Active
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted truncate">
+                {hangout.starts_on && (
+                  <>
+                    <span>{dateRange(hangout.starts_on, hangout.ends_on)}</span>
+                    <span>·</span>
+                  </>
+                )}
+                <span>{members.length}/{hangout.expected_guests} guests</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          {/* Right: Action Buttons & Avatar Roster Shortcut */}
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {/* Mini Avatar Stack (clickable to view roster) */}
             <button
-              onClick={() => setQrOpen(true)}
-              className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-xs font-black text-white shadow-glow transition hover:brightness-110 active:scale-95"
-              aria-label="Show invite QR code"
+              type="button"
+              onClick={() => (me?.is_admin ? setGuestsOpen(true) : setQrOpen(true))}
+              className="hidden sm:flex items-center -space-x-2 mr-1 transition-opacity hover:opacity-80"
+              title="View roster"
             >
-              <QrCode size={16} />
-              <span>Invite</span>
+              {members.slice(0, 3).map((m) => (
+                <Avatar key={m.id} name={m.display_name} size="sm" className="!h-7 !w-7 !text-[10px]" />
+              ))}
+              {members.length > 3 && (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 text-[10px] font-black text-muted ring-2 ring-surface border border-line">
+                  +{members.length - 3}
+                </span>
+              )}
             </button>
+
+            {/* Invite button */}
+            <button
+              type="button"
+              onClick={() => setQrOpen(true)}
+              className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-black text-white shadow-glow transition hover:brightness-110 active:scale-95"
+              title="Invite members"
+            >
+              <QrCode size={15} />
+              <span className="hidden sm:inline">Invite</span>
+            </button>
+
             {me?.is_admin && (
               <>
                 <button
+                  type="button"
                   onClick={() => setGuestsOpen(true)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
-                  aria-label="Manage guests"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
                   title="Manage roster"
+                  aria-label="Manage guests"
                 >
-                  <UsersRound size={18} />
+                  <UsersRound size={16} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSettingsOpen(true)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
-                  aria-label="Hangout settings"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
                   title="Hangout settings"
+                  aria-label="Hangout settings"
                 >
-                  <Settings2 size={18} />
+                  <Settings2 size={16} />
                 </button>
               </>
             )}
           </div>
-        </div>
-
-        {/* Member Avatars */}
-        <div className="relative z-10 mt-5 flex items-center -space-x-2 overflow-x-auto pb-1 no-scrollbar">
-          {members.map((m) => (
-            <Avatar key={m.id} name={m.display_name} size="sm" />
-          ))}
-          <button
-            onClick={() => setQrOpen(true)}
-            className="!ml-3 inline-flex items-center gap-1 rounded-full border border-dashed border-line bg-surface-2/60 px-3 py-1 text-xs font-black text-muted transition hover:text-primary hover:border-primary"
-          >
-            + Invite friend
-          </button>
         </div>
       </div>
 
@@ -229,6 +235,7 @@ export function HangoutPage() {
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
             hangout={hangout}
+            members={members}
             reload={reload}
           />
         </>
