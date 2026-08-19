@@ -87,6 +87,9 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
     setSaving(true)
     setError(null)
     try {
+      const parsedCap = parseCurrencyInput(capInput)
+      const capVal = Number.isFinite(parsedCap) && parsedCap > 0 ? parsedCap : null
+
       const { error } = await supabase
         .from('hangouts')
         .update({
@@ -95,17 +98,24 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
           ends_on: endsOn || null,
           expected_guests: guests,
           currency,
+          spending_cap: capVal,
           ...perms,
         })
         .eq('id', hangout.id)
       if (error) throw error
 
-      const parsedCap = parseCurrencyInput(capInput)
-      if (Number.isFinite(parsedCap) && parsedCap > 0) {
-        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(parsedCap))
+      if (capVal) {
+        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(capVal))
       } else {
         localStorage.removeItem(`hangowl_cap_${hangout.id}`)
       }
+
+      // Broadcast sync event to all connected devices
+      void supabase.channel(`hangout_realtime_${hangout.id}`).send({
+        type: 'broadcast',
+        event: 'sync',
+        payload: { cap: capVal },
+      })
 
       reload()
       onClose()

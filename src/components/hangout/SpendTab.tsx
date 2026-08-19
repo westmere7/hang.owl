@@ -15,7 +15,12 @@ export function SpendTab({ data }: { data: HangoutData }) {
   const [editing, setEditing] = useState<Spend | null>(null)
 
   const rawCap = localStorage.getItem(`hangowl_cap_${hangout.id}`)
-  const spendingCap = rawCap && Number(rawCap) > 0 ? Number(rawCap) : 0
+  const spendingCap =
+    hangout.spending_cap !== undefined && hangout.spending_cap !== null
+      ? Number(hangout.spending_cap)
+      : rawCap && Number(rawCap) > 0
+        ? Number(rawCap)
+        : 0
 
   const total = spends.reduce((sum, s) => sum + Number(s.amount), 0)
   const byCategory = useMemo(() => {

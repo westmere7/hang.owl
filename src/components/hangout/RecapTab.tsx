@@ -1,4 +1,4 @@
-import { ArrowRight, Check, CheckCircle2, ChevronDown, Copy, Crown, FileText, Minus, Pencil, PiggyBank, Receipt, Share2, X } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, Copy, Crown, Download, FileText, Minus, Pencil, PiggyBank, Receipt, Share2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { spendCategory } from '../../lib/categories'
@@ -813,6 +813,174 @@ function FullBillRecapModal({
     }
   }
 
+  const [generatingImg, setGeneratingImg] = useState(false)
+
+  async function handleSaveImage() {
+    setGeneratingImg(true)
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      // Phone portrait target dimensions (9:16 ratio)
+      const width = 1080
+      const padding = 60
+      let y = padding
+
+      // Calculate content height dynamically
+      let calculatedHeight = padding + 180 + 80 // Header & Hero
+      calculatedHeight += 60 + spends.length * 64 + 40 // Spends
+      calculatedHeight += 60 + recap.rows.length * 64 + 40 // Summary
+      calculatedHeight += 60 + (recap.settlements.length || 1) * 64 + 100 // Transfers & Footer
+
+      // Ensure min height matches 9:16 phone ratio (1080 x 1920)
+      const targetHeight = Math.max(1920, calculatedHeight)
+      canvas.width = width
+      canvas.height = targetHeight
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, targetHeight)
+      bgGrad.addColorStop(0, '#0F121D')
+      bgGrad.addColorStop(0.5, '#161A2B')
+      bgGrad.addColorStop(1, '#0D0F18')
+      ctx.fillStyle = bgGrad
+      ctx.fillRect(0, 0, width, targetHeight)
+
+      // Header Brand
+      ctx.fillStyle = '#6C5CE7'
+      ctx.font = '900 36px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText('HangOwl 🦉', padding, y + 36)
+
+      ctx.fillStyle = '#A0A5BD'
+      ctx.font = '800 24px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText('FULL FINANCIAL RECAP', padding, y + 70)
+      y += 110
+
+      // Hero Total Spent Box
+      const heroHeight = 140
+      ctx.fillStyle = '#1D2236'
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.roundRect(padding, y, width - padding * 2, heroHeight, 28)
+      ctx.fill()
+      ctx.stroke()
+
+      ctx.fillStyle = '#A0A5BD'
+      ctx.font = '900 20px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText(hangout.name.toUpperCase(), padding + 30, y + 42)
+
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = '900 52px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText(fmtMoney(recap.total, cur), padding + 30, y + 104)
+
+      const infoText = `${members.length} members • ${spends.length} spends`
+      ctx.fillStyle = '#6C5CE7'
+      ctx.font = '800 22px "Plus Jakarta Sans", sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText(infoText, width - padding - 30, y + 78)
+      ctx.textAlign = 'left'
+      y += heroHeight + 50
+
+      // Helper for rounded card rows
+      const drawRow = (title: string, sub: string, val: string, valColor = '#FFFFFF') => {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.roundRect(padding, y, width - padding * 2, 56, 18)
+        ctx.fill()
+        ctx.stroke()
+
+        ctx.fillStyle = '#FFFFFF'
+        ctx.font = '800 22px "Plus Jakarta Sans", sans-serif'
+        ctx.fillText(title, padding + 24, y + 36)
+
+        if (sub) {
+          ctx.fillStyle = '#8E94B0'
+          ctx.font = '600 18px "Plus Jakarta Sans", sans-serif'
+          ctx.fillText(sub, padding + 24 + ctx.measureText(title).width + 16, y + 36)
+        }
+
+        ctx.fillStyle = valColor
+        ctx.font = '900 22px "Plus Jakarta Sans", sans-serif'
+        ctx.textAlign = 'right'
+        ctx.fillText(val, width - padding - 24, y + 36)
+        ctx.textAlign = 'left'
+        y += 66
+      }
+
+      // Section: Itemized Spends
+      if (spends.length > 0) {
+        ctx.fillStyle = '#A0A5BD'
+        ctx.font = '900 20px "Plus Jakarta Sans", sans-serif'
+        ctx.fillText(`ITEMIZED SPENDINGS (${spends.length})`, padding, y)
+        y += 32
+
+        spends.forEach((s) => {
+          const spender = memberMap.get(s.spender_member_id)?.display_name || 'Someone'
+          drawRow(s.title, `Paid by ${spender}`, fmtMoney(Number(s.amount), cur))
+        })
+        y += 24
+      }
+
+      // Section: Member Financial Summary
+      ctx.fillStyle = '#A0A5BD'
+      ctx.font = '900 20px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText('MEMBER FINANCIAL SUMMARY', padding, y)
+      y += 32
+
+      recap.rows.forEach((r) => {
+        const isOwed = r.balance < -0.005
+        const owes = r.balance > 0.005
+        const valStr = isOwed
+          ? `+${fmtMoney(Math.abs(r.balance), cur)}`
+          : owes
+            ? `-${fmtMoney(r.balance, cur)}`
+            : 'Settled'
+        const valColor = isOwed ? '#00E5A3' : owes ? '#FF5376' : '#8E94B0'
+
+        drawRow(r.name, `Paid ${fmtMoney(r.paid, cur)} · Share ${fmtMoney(r.share, cur)}`, valStr, valColor)
+      })
+      y += 24
+
+      // Section: Payback Transfer Plan
+      ctx.fillStyle = '#A0A5BD'
+      ctx.font = '900 20px "Plus Jakarta Sans", sans-serif'
+      ctx.fillText(`PAYBACK TRANSFER PLAN (${recap.settlements.length})`, padding, y)
+      y += 32
+
+      if (recap.settlements.length === 0) {
+        drawRow('All settled!', 'No transfers needed', '🎉', '#00E5A3')
+      } else {
+        recap.settlements.forEach((s) => {
+          const fromName = memberMap.get(s.fromId)?.display_name || s.fromId
+          const toName = memberMap.get(s.toId)?.display_name || s.toId
+          drawRow(`${fromName} ➔ ${toName}`, '', fmtMoney(s.amount, cur), '#6C5CE7')
+        })
+      }
+      y += 40
+
+      // Footer Watermark
+      ctx.fillStyle = '#5A607A'
+      ctx.font = '700 18px "Plus Jakarta Sans", sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('Generated by HangOwl App 🦉 · hangowl.app', width / 2, Math.max(y + 20, targetHeight - 40))
+      ctx.textAlign = 'left'
+
+      // Export Canvas to PNG Image Download
+      const dataUrl = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = `hangowl-recap-${hangout.name.toLowerCase().replace(/\s+/g, '-')}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (e) {
+      console.error('Failed to generate image:', e)
+    } finally {
+      setGeneratingImg(false)
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -826,11 +994,22 @@ function FullBillRecapModal({
             variant="primary"
             size="lg"
             full
-            onClick={() => void handleCopy()}
+            onClick={() => void handleSaveImage()}
+            disabled={generatingImg}
             className="font-black gap-2 shadow-glow"
           >
+            <Download size={18} />
+            {generatingImg ? 'Generating image…' : 'Save as Phone Image (9:16)'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => void handleCopy()}
+            className="font-black gap-2 shrink-0"
+          >
             {copied ? <Check size={18} /> : <Copy size={18} />}
-            {copied ? 'Copied full recap text!' : 'Copy text report for group'}
+            {copied ? 'Copied!' : 'Copy text'}
           </Button>
           {typeof navigator !== 'undefined' && 'share' in navigator && (
             <Button

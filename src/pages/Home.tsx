@@ -191,6 +191,9 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
     setSaving(true)
     setError(null)
     try {
+      const initialCap = parseCurrencyInput(capInput)
+      const capVal = Number.isFinite(initialCap) && initialCap > 0 ? initialCap : null
+
       const { data: hangout, error: hErr } = await supabase
         .from('hangouts')
         .insert({
@@ -201,14 +204,14 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
           expected_guests: headcount,
           currency,
           admin_id: userId,
+          spending_cap: capVal,
         })
         .select('*')
         .single()
       if (hErr) throw hErr
 
-      const initialCap = parseCurrencyInput(capInput)
-      if (Number.isFinite(initialCap) && initialCap > 0) {
-        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(initialCap))
+      if (capVal) {
+        localStorage.setItem(`hangowl_cap_${hangout.id}`, String(capVal))
       }
 
       // The organizer is the admin member; named guests become placeholder

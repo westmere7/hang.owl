@@ -1,5 +1,5 @@
 import { ArrowLeft, Bookmark, QrCode, Receipt, Scale, Settings2, UsersRound } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BookmarksTab } from '../components/hangout/BookmarksTab'
 import { HangoutSettingsModal } from '../components/hangout/HangoutSettingsModal'
@@ -64,6 +64,43 @@ export function HangoutPage() {
     setRev((r) => r + 1)
     reload()
   }
+
+  // Realtime multi-device sync
+  useEffect(() => {
+    if (!id) return
+    const channel = supabase
+      .channel(`hangout_realtime_${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hangouts', filter: `id=eq.${id}` },
+        () => refresh(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'spends', filter: `hangout_id=eq.${id}` },
+        () => refresh(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hangout_members', filter: `hangout_id=eq.${id}` },
+        () => refresh(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hangout_bookmarks', filter: `hangout_id=eq.${id}` },
+        () => refresh(),
+      )
+      .on(
+        'broadcast',
+        { event: 'sync' },
+        () => refresh(),
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [id])
 
   if (loading) return <PageLoader />
   if (error) return <ErrorNote message={error} />
