@@ -1,6 +1,7 @@
 import { Minus, Plus, X } from 'lucide-react'
 import {
   useEffect,
+  useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
@@ -388,14 +389,30 @@ export function Modal({
   footer?: ReactNode
   wide?: boolean
 }) {
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
+
+    const updateHeight = () => {
+      if (typeof window !== 'undefined' && window.visualViewport) {
+        setViewportHeight(window.visualViewport.height)
+      }
+    }
+
+    updateHeight()
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null
+    vv?.addEventListener('resize', updateHeight)
+    vv?.addEventListener('scroll', updateHeight)
+
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
+      vv?.removeEventListener('resize', updateHeight)
+      vv?.removeEventListener('scroll', updateHeight)
     }
   }, [open, onClose])
 
@@ -403,14 +420,17 @@ export function Modal({
     const target = e.target as HTMLElement
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) {
       setTimeout(() => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }, 250)
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 150)
     }
   }
 
   if (!open) return null
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 max-h-[100dvh] overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 overflow-hidden"
+      style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
+    >
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-200"
         onClick={onClose}
@@ -420,9 +440,12 @@ export function Modal({
         role="dialog"
         aria-modal
         className={cn(
-          'relative flex max-h-[88dvh] sm:max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border-t border-line/60 bg-surface shadow-pop sm:rounded-3xl sm:border sm:border-line/60',
+          'relative flex w-full flex-col overflow-hidden rounded-t-[1.75rem] border-t border-line/60 bg-surface shadow-pop sm:rounded-3xl sm:border sm:border-line/60',
           wide ? 'sm:max-w-2xl' : 'sm:max-w-md',
         )}
+        style={{
+          maxHeight: viewportHeight ? `${Math.min(viewportHeight, window.innerHeight * 0.9)}px` : '88dvh',
+        }}
       >
         {/* Mobile drag handle indicator */}
         <div className="flex justify-center pt-2.5 pb-1 sm:hidden shrink-0">
