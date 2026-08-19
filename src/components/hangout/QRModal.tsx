@@ -21,16 +21,16 @@ export function QRModal({ open, onClose, hangout }: { open: boolean; onClose: ()
   return (
     <Modal open={open} onClose={onClose} title="Invite guests">
       <div className="flex flex-col items-center gap-4 pb-4 text-center">
-        <p className="text-sm text-muted">
-          Guests scan this code, type their name once, and they're in.
+        <p className="text-xs sm:text-sm font-semibold text-muted max-w-xs">
+          Guests scan this code, enter their name once, and they're in immediately.
         </p>
-        <div className="rounded-xl3 bg-white p-5 shadow-card">
-          <QRCodeSVG value={url} size={208} fgColor="#2a2153" level="M" />
+        <div className="rounded-2xl bg-white p-5 shadow-pop border-4 border-primary/30">
+          <QRCodeSVG value={url} size={208} fgColor="#11121d" level="M" />
         </div>
-        <p className="text-xs font-bold uppercase tracking-widest text-muted">
-          Code · <span className="text-primary">{hangout.code}</span>
+        <p className="text-xs font-black uppercase tracking-wider text-muted">
+          Invite Code · <span className="text-primary font-mono text-sm">{hangout.code}</span>
         </p>
-        <Button variant="soft" onClick={() => void copy()} full>
+        <Button variant="primary" onClick={() => void copy()} full size="lg" className="shadow-glow">
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? 'Link copied!' : 'Copy invite link'}
         </Button>

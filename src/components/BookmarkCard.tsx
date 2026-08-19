@@ -31,8 +31,8 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleDone }: Props
   return (
     <div
       className={cn(
-        'group flex gap-3 rounded-xl3 bg-surface p-3 shadow-card transition',
-        bookmark.done && 'opacity-60',
+        'group flex gap-3.5 rounded-2xl border border-line/60 bg-surface p-3.5 shadow-card transition-all hover:border-primary/40',
+        bookmark.done && 'opacity-65 bg-surface/50',
       )}
     >
       {bookmark.image_url ? (
@@ -40,65 +40,67 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleDone }: Props
           src={bookmark.image_url}
           alt=""
           loading="lazy"
-          className="h-20 w-20 shrink-0 rounded-2xl object-cover"
+          className="h-20 w-20 shrink-0 rounded-2xl object-cover border border-line/40 shadow-sm"
         />
       ) : (
-        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary shadow-sm border border-primary/20">
           <Icon size={26} />
         </span>
       )}
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className={cn('truncate text-sm font-extrabold text-ink', bookmark.done && 'line-through')}>
-            {bookmark.title}
-          </p>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-primary">
-            <Icon size={10} />
-            {cat.label}
-          </span>
+      <div className="min-w-0 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <p className={cn('truncate text-sm sm:text-base font-black text-ink', bookmark.done && 'line-through opacity-70')}>
+              {bookmark.title}
+            </p>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-soft border border-primary/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+              <Icon size={10} />
+              {cat.label}
+            </span>
+          </div>
+
+          {(domain || bookmark.location) && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              {domain && (
+                <a
+                  href={bookmark.url ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                >
+                  <ExternalLink size={11} />
+                  {domain}
+                </a>
+              )}
+              {bookmark.location && (
+                <a
+                  href={mapsUrl(bookmark.location)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`Open in Maps: ${bookmark.location}`}
+                  className="inline-flex max-w-[12rem] items-center gap-1 text-xs font-bold text-primary hover:underline"
+                >
+                  <MapPin size={11} className="shrink-0" />
+                  <span className="truncate">{bookmark.location}</span>
+                </a>
+              )}
+            </div>
+          )}
+          {(bookmark.notes || bookmark.description) && (
+            <p className="mt-1 line-clamp-2 text-xs font-medium text-muted">{bookmark.notes || bookmark.description}</p>
+          )}
         </div>
 
-        {(domain || bookmark.location) && (
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-            {domain && (
-              <a
-                href={bookmark.url ?? '#'}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-bold text-accent-deep hover:underline"
-              >
-                <ExternalLink size={11} />
-                {domain}
-              </a>
-            )}
-            {bookmark.location && (
-              <a
-                href={mapsUrl(bookmark.location)}
-                target="_blank"
-                rel="noreferrer"
-                title={`Open in Maps: ${bookmark.location}`}
-                className="inline-flex max-w-[12rem] items-center gap-1 text-xs font-bold text-primary hover:underline"
-              >
-                <MapPin size={11} className="shrink-0" />
-                <span className="truncate">{bookmark.location}</span>
-              </a>
-            )}
-          </div>
-        )}
-        {(bookmark.notes || bookmark.description) && (
-          <p className="mt-1 line-clamp-2 text-xs text-muted">{bookmark.notes || bookmark.description}</p>
-        )}
-
-        <div className="mt-1.5 flex items-center gap-1">
+        <div className="mt-2.5 flex items-center gap-1.5 pt-1">
           {onToggleDone && (
             <button
               onClick={onToggleDone}
               className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold transition-colors',
+                'inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-black transition-all select-none',
                 bookmark.done
-                  ? 'bg-success-soft text-success'
-                  : 'bg-surface-2 text-muted hover:text-ink',
+                  ? 'bg-success-soft text-success border border-success/30'
+                  : 'bg-surface-2 text-muted hover:text-ink border border-line/50',
               )}
             >
               <Check size={12} />
@@ -109,7 +111,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleDone }: Props
           {onEdit && (
             <button
               onClick={onEdit}
-              className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-ink"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2/60 text-muted transition hover:bg-surface-2 hover:text-ink"
               aria-label="Edit"
             >
               <Pencil size={14} />
@@ -118,7 +120,7 @@ export function BookmarkCard({ bookmark, onEdit, onDelete, onToggleDone }: Props
           {onDelete && (
             <button
               onClick={onDelete}
-              className="rounded-full p-1.5 text-muted transition hover:bg-danger-soft hover:text-danger"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2/60 text-muted transition hover:bg-danger-soft hover:text-danger"
               aria-label="Delete"
             >
               <Trash2 size={14} />

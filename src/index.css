@@ -4,50 +4,56 @@
 
 /* ---------- Palette (light) ---------- */
 :root {
-  --bg: #f2f1fa;
+  --bg: #f4f5fa;
   --surface: #ffffff;
-  --surface-2: #f7f6fd;
-  --text: #2a2153;
-  --muted: #8b85ad;
-  --border: #e7e4f6;
+  --surface-2: #eceef6;
+  --text: #181928;
+  --muted: #636987;
+  --border: #e1e4f0;
 
-  --primary: #5433eb;
-  --primary-deep: #3d22bc;
-  --primary-soft: #eeeafe;
+  --primary: #6047eb;
+  --primary-deep: #482ed4;
+  --primary-soft: #eeebfc;
   --on-primary: #ffffff;
 
-  --accent: #ff7a50;
-  --accent-deep: #f25e2e;
-  --accent-soft: #ffede5;
+  --accent: #f23c65;
+  --accent-deep: #db234e;
+  --accent-soft: #fde8ee;
+  --on-accent: #ffffff;
 
-  --success: #16a86c;
-  --success-soft: #e2f7ee;
-  --danger: #e5484d;
-  --danger-soft: #fdebec;
+  --success: #08a674;
+  --success-soft: #e0f7ef;
+  --danger: #e02e40;
+  --danger-soft: #feebee;
+  --warning: #d98200;
+  --warning-soft: #fef3db;
 }
 
-/* ---------- Palette (dark) ---------- */
+/* ---------- Palette (dark - modern midnight / neon) ---------- */
 .dark {
-  --bg: #120e28;
-  --surface: #1c1638;
-  --surface-2: #251e47;
-  --text: #efedfc;
-  --muted: #9d97c4;
-  --border: #332b5c;
+  --bg: #11121d;
+  --surface: #1a1c2c;
+  --surface-2: #24273d;
+  --text: #ffffff;
+  --muted: #959bbd;
+  --border: #2c304a;
 
-  --primary: #7c63ff;
-  --primary-deep: #5433eb;
-  --primary-soft: #2a2158;
+  --primary: #6c5ce7;
+  --primary-deep: #5844e3;
+  --primary-soft: #252448;
   --on-primary: #ffffff;
 
-  --accent: #ff8a5e;
-  --accent-deep: #f25e2e;
-  --accent-soft: #3b2540;
+  --accent: #ff5376;
+  --accent-deep: #f43f63;
+  --accent-soft: #381923;
+  --on-accent: #ffffff;
 
-  --success: #3ecf8e;
-  --success-soft: #143a2c;
-  --danger: #ff6369;
-  --danger-soft: #43222b;
+  --success: #00e5a3;
+  --success-soft: #0d3829;
+  --danger: #ff4757;
+  --danger-soft: #3d151c;
+  --warning: #ffa502;
+  --warning-soft: #38270e;
 }
 
 @theme inline {
@@ -66,19 +72,25 @@
   --color-accent: var(--accent);
   --color-accent-deep: var(--accent-deep);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
 
-  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --radius-xl2: 1.25rem;
-  --radius-xl3: 1.75rem;
+  --radius-xl3: 1.6rem;
 
-  --shadow-card: 0 8px 30px -12px rgb(42 33 83 / 0.14);
-  --shadow-pop: 0 20px 50px -12px rgb(42 33 83 / 0.28);
+  --shadow-card: 0 10px 30px -10px rgba(10, 12, 24, 0.35);
+  --shadow-pop: 0 20px 45px -12px rgba(10, 12, 24, 0.5);
+  --shadow-glow: 0 0 25px -4px rgba(108, 92, 231, 0.45);
+  --shadow-glow-accent: 0 0 25px -4px rgba(255, 83, 118, 0.45);
+  --shadow-glow-success: 0 0 25px -4px rgba(0, 229, 163, 0.45);
 }
 
 html,
@@ -90,9 +102,10 @@ body,
 body {
   @apply bg-bg text-ink font-sans antialiased;
   font-optical-sizing: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Nicer number rendering for money */
+/* Money numbers alignment */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -108,13 +121,22 @@ input[type="number"] {
   appearance: textfield;
 }
 
-/* Thin scrollbars */
+/* Smooth custom scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
 
-/* Safe-area padding for mobile bottom nav */
+/* Mobile safe area utility */
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+/* Horizontal scroll styling with hide scrollbar on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

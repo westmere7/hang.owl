@@ -41,26 +41,39 @@ export function HomePage() {
   const active = (data ?? []).filter((h) => h.status === 'active')
 
   return (
-    <div className="space-y-5">
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-xl3 bg-gradient-to-br from-primary to-primary-deep p-6 text-white shadow-pop">
-        <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10" />
-        <div className="absolute -bottom-14 right-16 h-32 w-32 rounded-full bg-accent/30 blur-2xl" />
-        <p className="text-sm font-bold text-white/70">
-          {profile?.display_name ? `Hey ${profile.display_name} 🦉` : 'Hey there 🦉'}
-        </p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">
-          {active.length === 0
-            ? 'Time to plan a hangout'
-            : `${active.length} hangout${active.length > 1 ? 's' : ''} in flight`}
-        </h1>
-        <Button variant="accent" className="mt-5" onClick={startCreate}>
-          <Plus size={16} />
-          New hangout
-        </Button>
-        {!isAuthed && (
-          <p className="mt-2 text-xs font-semibold text-white/60">Sign in to start a hangout.</p>
-        )}
+    <div className="space-y-6">
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-line/60 bg-gradient-to-br from-surface via-surface to-surface-2 p-5 sm:p-7 shadow-pop">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 right-20 h-40 w-40 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface-2/80 px-3 py-1 text-xs font-black text-muted mb-3">
+            <span>🦉</span>
+            <span>{profile?.display_name ? `Hey, ${profile.display_name}` : 'Welcome to HangOwl'}</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-ink">
+            {active.length === 0
+              ? 'Time to plan a hangout'
+              : `${active.length} hangout${active.length > 1 ? 's' : ''} in flight`}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm font-semibold text-muted max-w-md">
+            Save places to visit, record who paid for what, and let HangOwl split the bill effortlessly.
+          </p>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Button variant="primary" size="lg" onClick={startCreate} className="shadow-glow">
+              <Plus size={18} />
+              New hangout
+            </Button>
+            {!isAuthed && (
+              <span className="text-xs font-bold text-muted">
+                (Guests can join anytime via QR)
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       <ErrorNote message={error} />
@@ -68,17 +81,21 @@ export function HomePage() {
         <PageLoader />
       ) : (data ?? []).length === 0 ? (
         <EmptyState
-          icon={<PartyPopper size={26} />}
+          icon={<PartyPopper size={30} />}
           title="No hangouts yet"
-          text="Create one for your next trip or dining night, then let everyone join by scanning its QR code."
+          text="Create one for your next trip or dining night, then invite everyone to join by scanning its QR code."
           action={
-            <Button variant="accent" onClick={startCreate}>
+            <Button variant="primary" size="md" onClick={startCreate}>
               <Plus size={16} /> New hangout
             </Button>
           }
         />
       ) : (
         <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xs font-black uppercase tracking-wider text-muted">Your Hangouts</h2>
+            <span className="text-xs font-bold text-muted tabular-nums">{(data ?? []).length} total</span>
+          </div>
           {(data ?? []).map((h) => (
             <HangoutRow key={h.id} hangout={h} />
           ))}
@@ -102,36 +119,40 @@ function HangoutRow({ hangout }: { hangout: HangoutWithMembers }) {
   return (
     <button
       onClick={() => navigate(`/hangout/${hangout.id}`)}
-      className="flex w-full items-center gap-4 rounded-xl3 bg-surface p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:shadow-pop"
+      className="flex w-full items-center gap-3.5 sm:gap-4 rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-4 text-left shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-pop active:scale-[0.99]"
     >
       <span
         className={cn(
-          'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
-          ended ? 'bg-surface-2 text-muted' : 'bg-primary-soft text-primary',
+          'flex h-12 w-12 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-2xl shadow-sm',
+          ended ? 'bg-surface-2 text-muted' : 'bg-primary-soft text-primary shadow-glow',
         )}
       >
         <Users size={22} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-base font-extrabold text-ink">{hangout.name}</span>
-          {ended && (
-            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-extrabold uppercase text-muted">
+          <span className="truncate text-sm sm:text-base font-black text-ink">{hangout.name}</span>
+          {ended ? (
+            <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[10px] font-black uppercase text-muted border border-line/40">
               Ended
+            </span>
+          ) : (
+            <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
+              Active
             </span>
           )}
         </span>
-        <span className="block text-xs font-semibold text-muted">
+        <span className="mt-0.5 block text-xs font-semibold text-muted">
           {dateRange(hangout.starts_on, hangout.ends_on)} · {members.length}/{hangout.expected_guests} guests
         </span>
       </span>
-      <span className="flex -space-x-2">
-        {members.slice(0, 4).map((m) => (
+      <span className="flex -space-x-2.5">
+        {members.slice(0, 3).map((m) => (
           <Avatar key={m.id} name={m.display_name} size="sm" />
         ))}
-        {members.length > 4 && (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 text-[10px] font-extrabold text-muted ring-2 ring-surface">
-            +{members.length - 4}
+        {members.length > 3 && (
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-[10px] font-black text-muted ring-2 ring-surface border border-line">
+            +{members.length - 3}
           </span>
         )}
       </span>
@@ -216,7 +237,7 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
       onClose={onClose}
       title="New hangout"
       footer={
-        <Button variant="accent" full size="lg" onClick={() => void create()} disabled={saving || !name.trim()}>
+        <Button variant="primary" full size="lg" onClick={() => void create()} disabled={saving || !name.trim()}>
           {saving ? 'Creating…' : 'Create hangout'}
         </Button>
       }
@@ -256,11 +277,11 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
 
         <Field label="Who's coming?" hint="Name them now so you can assign spends right away — they can still join later by QR. Leave blank to fill in later.">
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5 rounded-2xl bg-primary-soft/60 px-3 py-2">
+            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-2 border border-line/60 px-3.5 py-2.5">
               <Avatar name={organizerName} size="sm" />
-              <span className="flex-1 truncate text-sm font-bold text-ink">{organizerName}</span>
-              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold uppercase text-on-primary">
-                You
+              <span className="flex-1 truncate text-sm font-extrabold text-ink">{organizerName}</span>
+              <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-black uppercase text-on-primary shadow-sm">
+                Organizer
               </span>
             </div>
             {guestNames.map((value, i) => (
@@ -277,7 +298,7 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
                 <button
                   type="button"
                   onClick={() => setGuestNames((prev) => prev.filter((_, j) => j !== i))}
-                  className="rounded-full p-1.5 text-muted transition hover:bg-danger-soft hover:text-danger"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-muted transition hover:bg-danger-soft hover:text-danger"
                   aria-label={`Remove guest ${i + 1}`}
                 >
                   <X size={16} />
@@ -287,10 +308,10 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
             <button
               type="button"
               onClick={() => setGuestNames((prev) => [...prev, ''])}
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3.5 py-1.5 text-sm font-bold text-primary transition hover:bg-primary-soft"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line/60 bg-surface-2 px-3.5 py-2 text-xs font-black text-primary transition hover:bg-primary-soft"
             >
-              <Plus size={15} />
-              Add someone
+              <Plus size={14} />
+              Add another guest
             </button>
           </div>
         </Field>

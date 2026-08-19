@@ -73,15 +73,15 @@ export function SettingsPanel() {
           )}
 
           <section className="space-y-2">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-muted">Account</p>
+            <p className="text-xs font-black uppercase tracking-wider text-muted">Account</p>
             {isAuthed ? (
-              <div className="flex items-center gap-3 rounded-xl3 bg-surface-2 p-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-success-soft text-success">
+              <div className="flex items-center gap-3 rounded-2xl border border-line/60 bg-surface-2/60 p-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-success-soft text-success border border-success/30">
                   <UserCircle2 size={22} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold text-ink">Signed in</p>
-                  <p className="truncate text-xs text-muted">{email}</p>
+                  <p className="text-sm font-black text-ink">Signed in</p>
+                  <p className="truncate text-xs font-semibold text-muted">{email}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => void signOut()}>
                   <LogOut size={15} />
@@ -89,29 +89,29 @@ export function SettingsPanel() {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-xl3 bg-surface-2 p-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <div className="flex items-center gap-3 rounded-2xl border border-line/60 bg-surface-2/60 p-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary border border-primary/20">
                   <UserCircle2 size={22} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold text-ink">Guest</p>
-                  <p className="text-xs text-muted">Sign in to create your own hangouts.</p>
+                  <p className="text-sm font-black text-ink">Guest</p>
+                  <p className="text-xs font-semibold text-muted">Sign in to create your own hangouts.</p>
                 </div>
-                <Button size="sm" onClick={() => setAuthOpen(true)}>
+                <Button variant="primary" size="sm" onClick={() => setAuthOpen(true)}>
                   Sign in
                 </Button>
               </div>
             )}
           </section>
 
-          <section className="flex items-center gap-3 rounded-xl3 bg-surface-2 p-4">
+          <section className="flex items-center gap-3 rounded-2xl border border-line/60 bg-surface-2/60 p-4">
             <OwlLogo size={40} />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-extrabold text-ink">HangOwl</p>
-              <p className="text-xs text-muted">Plan hangouts, save places, split the bill.</p>
+              <p className="text-sm font-black text-ink">HangOwl</p>
+              <p className="text-xs font-semibold text-muted">Plan hangouts, save places, split the bill.</p>
             </div>
             <span
-              className="shrink-0 rounded-full bg-surface px-2.5 py-1 font-mono text-[11px] font-bold text-muted"
+              className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] font-bold text-muted"
               title={`Commit ${BUILD_COMMIT} · built ${new Date(BUILD_TIME).toLocaleString()}`}
             >
               v{APP_VERSION}

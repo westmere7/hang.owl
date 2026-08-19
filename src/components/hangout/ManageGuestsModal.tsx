@@ -67,14 +67,14 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
   return (
     <Modal open={open} onClose={onClose} title="Guests">
       <div className="space-y-4 pb-2">
-        <p className="text-sm text-muted">
+        <p className="text-xs sm:text-sm font-semibold text-muted">
           Add people by name to assign and bill them now — they can claim their spot later by scanning
-          the invite QR.
+          the invite QR code.
         </p>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {members.map((m) => (
-            <div key={m.id} className="flex items-center gap-2.5 rounded-2xl bg-surface-2 px-3 py-2">
+            <div key={m.id} className="flex items-center gap-2.5 rounded-2xl border border-line/60 bg-surface-2/60 px-3 py-2.5">
               <Avatar name={m.display_name} size="sm" />
               <Input
                 className="flex-1 !bg-surface"
@@ -85,17 +85,17 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
               />
               <span
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase',
+                  'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
                   m.is_admin
-                    ? 'bg-accent-soft text-accent-deep'
+                    ? 'bg-warning-soft text-warning border border-warning/30'
                     : m.profile_id
-                      ? 'bg-success-soft text-success'
-                      : 'bg-primary-soft text-primary',
+                      ? 'bg-success-soft text-success border border-success/30'
+                      : 'bg-primary-soft text-primary border border-primary/20',
                 )}
               >
                 {m.is_admin ? (
                   <>
-                    <Crown size={10} /> You
+                    <Crown size={10} /> Admin
                   </>
                 ) : m.profile_id ? (
                   <>
@@ -110,7 +110,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
               {!m.is_admin && (
                 <button
                   onClick={() => void remove(m)}
-                  className="rounded-full p-1.5 text-muted transition hover:bg-danger-soft hover:text-danger"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-muted transition hover:bg-danger-soft hover:text-danger"
                   aria-label={`Remove ${m.display_name}`}
                 >
                   <Trash2 size={15} />
@@ -130,7 +130,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
               if (e.key === 'Enter') void addGuest()
             }}
           />
-          <Button variant="soft" size="icon" onClick={() => void addGuest()} disabled={busy || !newName.trim()}>
+          <Button variant="primary" size="icon" onClick={() => void addGuest()} disabled={busy || !newName.trim()}>
             <Plus size={18} />
           </Button>
         </div>

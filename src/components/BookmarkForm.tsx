@@ -98,7 +98,7 @@ export function BookmarkForm({ open, onClose, onSubmit, initial, heading }: Prop
           <Button variant="outline" onClick={onClose} full>
             Cancel
           </Button>
-          <Button variant="accent" onClick={submit} disabled={saving} full>
+          <Button variant="primary" onClick={submit} disabled={saving} full>
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </div>
@@ -128,12 +128,12 @@ export function BookmarkForm({ open, onClose, onSubmit, initial, heading }: Prop
         </Field>
 
         {imageUrl && (
-          <div className="relative overflow-hidden rounded-2xl">
+          <div className="relative overflow-hidden rounded-2xl border border-line/60">
             <img src={imageUrl} alt="" className="h-36 w-full object-cover" />
             <button
               type="button"
               onClick={() => setImageUrl(null)}
-              className="absolute right-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-xs font-bold text-white"
+              className="absolute right-2 top-2 rounded-full bg-black/70 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm"
             >
               Remove
             </button>

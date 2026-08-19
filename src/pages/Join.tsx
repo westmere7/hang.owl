@@ -17,9 +17,9 @@ import type { Hangout, Member } from '../types'
  * walk straight in.
  */
 export function JoinPage() {
-  const { code } = useParams<{ code: string }>()
   const { ready, userId, profile, setName } = useApp()
   const navigate = useNavigate()
+  const { code } = useParams<{ code: string }>()
   const [nameInput, setNameInput] = useState(() => profile?.display_name || getCachedName() || '')
   const [showNew, setShowNew] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -86,9 +86,11 @@ export function JoinPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-bg p-6">
-      <div className="w-full max-w-sm rounded-xl3 bg-surface p-8 text-center shadow-pop">
-        <div className="mb-5 flex justify-center">
+    <div className="flex min-h-dvh items-center justify-center bg-bg p-4 sm:p-6">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-6 sm:p-8 text-center shadow-pop">
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/20 blur-2xl pointer-events-none" />
+        
+        <div className="relative mb-5 flex justify-center">
           <OwlLogo size={64} />
         </div>
 
@@ -97,7 +99,7 @@ export function JoinPage() {
         ) : !hangout ? (
           <>
             <h1 className="text-xl font-black text-ink">Hangout not found</h1>
-            <p className="mt-2 text-sm text-muted">
+            <p className="mt-2 text-sm font-semibold text-muted">
               This invite link doesn't match any hangout. Ask the organizer for a fresh QR code.
             </p>
             <Link to="/" className="mt-6 block">
@@ -108,27 +110,27 @@ export function JoinPage() {
           </>
         ) : (
           <>
-            <p className="text-sm font-bold text-muted">You're invited to</p>
-            <h1 className="mt-1 text-2xl font-black text-ink">{hangout.name}</h1>
-            <p className="mt-1 text-sm font-semibold text-muted">
+            <p className="text-xs font-black uppercase tracking-wider text-muted">You're invited to</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">{hangout.name}</h1>
+            <p className="mt-1 text-xs font-bold text-muted">
               {dateRange(hangout.starts_on, hangout.ends_on)}
             </p>
 
             <div className="mt-6 space-y-3 text-left">
               {alreadyMember ? (
-                <Button variant="accent" full size="lg" onClick={() => navigate(`/hangout/${hangout.id}`)}>
+                <Button variant="primary" full size="lg" onClick={() => navigate(`/hangout/${hangout.id}`)} className="shadow-glow">
                   You're in — open it
                 </Button>
               ) : knownName && !showNew ? (
                 <>
                   <ErrorNote message={error} />
-                  <Button variant="accent" full size="lg" onClick={() => void joinNew()} disabled={busy}>
+                  <Button variant="primary" full size="lg" onClick={() => void joinNew()} disabled={busy} className="shadow-glow">
                     {busy ? 'Joining…' : `Join as ${knownName}`}
                   </Button>
                   {unclaimed.length > 0 && (
                     <button
                       onClick={() => setShowNew(false)}
-                      className="w-full text-center text-xs font-bold text-muted"
+                      className="w-full text-center text-xs font-bold text-muted transition hover:text-ink"
                     >
                       or pick your name from the list below
                     </button>
@@ -139,7 +141,7 @@ export function JoinPage() {
                 <>
                   <ClaimList members={unclaimed} busy={busy} onClaim={claim} heading />
                   <div>
-                    <p className="mb-1.5 text-xs font-extrabold uppercase tracking-wide text-muted">
+                    <p className="mb-1.5 text-xs font-black uppercase tracking-wider text-muted">
                       {unclaimed.length > 0 ? 'Not on the list?' : 'What should we call you?'}
                     </p>
                     <Input
@@ -151,7 +153,7 @@ export function JoinPage() {
                     />
                   </div>
                   <ErrorNote message={error} />
-                  <Button variant="accent" full size="lg" onClick={() => void joinNew()} disabled={busy || !nameInput.trim()}>
+                  <Button variant="primary" full size="lg" onClick={() => void joinNew()} disabled={busy || !nameInput.trim()} className="shadow-glow">
                     <UserPlus size={16} />
                     {busy ? 'Joining…' : 'Join as someone new'}
                   </Button>
@@ -180,7 +182,7 @@ function ClaimList({
   return (
     <div className="space-y-2">
       {heading && (
-        <p className="text-xs font-extrabold uppercase tracking-wide text-muted">Which one are you?</p>
+        <p className="text-xs font-black uppercase tracking-wider text-muted">Which one are you?</p>
       )}
       <div className="space-y-1.5">
         {members.map((m) => (
@@ -189,13 +191,13 @@ function ClaimList({
             disabled={busy}
             onClick={() => onClaim(m)}
             className={cn(
-              'flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left transition',
-              'hover:border-primary hover:bg-primary-soft disabled:opacity-50',
+              'flex w-full items-center gap-3 rounded-2xl border border-line/60 bg-surface-2/60 p-3 text-left transition',
+              'hover:border-primary/50 hover:bg-primary-soft disabled:opacity-50',
             )}
           >
             <Avatar name={m.display_name} size="sm" />
-            <span className="flex-1 truncate text-sm font-bold text-ink">{m.display_name}</span>
-            <span className="text-xs font-extrabold text-primary">That's me</span>
+            <span className="flex-1 truncate text-sm font-extrabold text-ink">{m.display_name}</span>
+            <span className="text-xs font-black text-primary">That's me</span>
           </button>
         ))}
       </div>

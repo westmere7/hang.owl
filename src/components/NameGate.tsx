@@ -35,14 +35,16 @@ export function NameGate() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg p-6">
-      <div className="w-full max-w-sm rounded-xl3 bg-surface p-8 shadow-pop">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/95 backdrop-blur-md p-4 sm:p-6">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-6 sm:p-8 shadow-pop">
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/20 blur-2xl pointer-events-none" />
+
+        <div className="relative mb-6 flex flex-col items-center gap-3 text-center">
           <OwlLogo size={64} />
-          <h1 className="text-2xl font-black text-ink">
+          <h1 className="text-2xl font-black tracking-tight text-ink">
             Welcome to Hang<span className="text-primary">Owl</span>
           </h1>
-          <p className="text-sm text-muted">What should your friends call you?</p>
+          <p className="text-xs sm:text-sm font-semibold text-muted">What should your friends call you?</p>
         </div>
         <form
           className="space-y-3"
@@ -59,15 +61,15 @@ export function NameGate() {
             onChange={(e) => setValue(e.target.value)}
           />
           <ErrorNote message={error} />
-          <Button type="submit" variant="accent" full size="lg" disabled={!value.trim() || saving}>
+          <Button type="submit" variant="primary" full size="lg" disabled={!value.trim() || saving} className="shadow-glow">
             {saving ? 'Saving…' : "Let's hang"}
           </Button>
         </form>
         <button
           onClick={() => setAuthOpen(true)}
-          className="mt-4 w-full text-center text-sm font-bold text-muted transition hover:text-ink"
+          className="mt-4 w-full text-center text-xs sm:text-sm font-bold text-muted transition hover:text-ink"
         >
-          Already have an account? <span className="text-primary">Sign in</span>
+          Already have an account? <span className="text-primary font-black">Sign in</span>
         </button>
       </div>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} initialMode="signin" />

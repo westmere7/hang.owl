@@ -82,7 +82,7 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
       onClose={onClose}
       title="Hangout settings"
       footer={
-        <Button variant="accent" full onClick={() => void save()} disabled={saving || !name.trim()}>
+        <Button variant="primary" full size="lg" onClick={() => void save()} disabled={saving || !name.trim()}>
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
       }
@@ -120,8 +120,8 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
           </Field>
         </div>
 
-        <div className="rounded-xl3 bg-surface-2 p-3">
-          <p className="mb-1 px-1 text-xs font-extrabold uppercase tracking-wide text-muted">
+        <div className="rounded-2xl border border-line/60 bg-surface-2/60 p-3">
+          <p className="mb-2 px-1 text-xs font-black uppercase tracking-wider text-muted">
             What guests can do
           </p>
           <Toggle

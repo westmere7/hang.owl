@@ -8,7 +8,7 @@ import type { Bookmark, BookmarkCategory, HangoutBookmark } from '../../types'
 import type { HangoutData } from '../../pages/Hangout'
 import { BookmarkCard } from '../BookmarkCard'
 import { BookmarkForm, type BookmarkValues } from '../BookmarkForm'
-import { Button, Chip, EmptyState, Modal, PageLoader, Spinner } from '../ui'
+import { Button, Chip, EmptyState, Modal, PageLoader, Spinner, cn } from '../ui'
 
 /** In-hangout wishlist: To visit / To eat / To drink / To do. */
 export function BookmarksTab({ data }: { data: HangoutData }) {
@@ -51,8 +51,8 @@ export function BookmarksTab({ data }: { data: HangoutData }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-1 gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-1 gap-2 overflow-x-auto pb-1 no-scrollbar">
           <Chip active={filter === 'all'} onClick={() => setFilter('all')}>
             All
           </Chip>
@@ -64,14 +64,14 @@ export function BookmarksTab({ data }: { data: HangoutData }) {
           ))}
         </div>
         {allowed && (
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button variant="soft" size="sm" onClick={() => setImporting(true)}>
               <FolderInput size={15} />
-              From saved
+              <span className="hidden sm:inline">From saved</span>
             </Button>
-            <Button variant="accent" size="sm" onClick={() => setAdding(true)}>
+            <Button variant="primary" size="sm" onClick={() => setAdding(true)}>
               <Plus size={15} />
-              Add
+              <span>Add</span>
             </Button>
           </div>
         )}
@@ -79,9 +79,21 @@ export function BookmarksTab({ data }: { data: HangoutData }) {
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={<BookmarkIcon size={26} />}
+          icon={<BookmarkIcon size={28} />}
           title="Nothing planned yet"
           text="Add places to visit, eat, drink or things to do — or pull them in from the team's saved bookmarks."
+          action={
+            allowed ? (
+              <div className="flex gap-2">
+                <Button variant="soft" size="sm" onClick={() => setImporting(true)}>
+                  <FolderInput size={15} /> Import saved
+                </Button>
+                <Button variant="primary" size="sm" onClick={() => setAdding(true)}>
+                  <Plus size={15} /> Add place
+                </Button>
+              </div>
+            ) : undefined
+          }
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -159,7 +171,7 @@ function ImportPicker({
       {items === null ? (
         <PageLoader />
       ) : items.length === 0 ? (
-        <p className="pb-6 text-center text-sm text-muted">The team's bookmark list is empty.</p>
+        <p className="pb-6 text-center text-sm font-semibold text-muted">The team's bookmark list is empty.</p>
       ) : (
         <div className="space-y-2 pb-4">
           {items.map((b) => {
@@ -177,25 +189,27 @@ function ImportPicker({
                     setBusy(null)
                   }
                 }}
-                className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5 text-left transition hover:bg-surface-2 disabled:opacity-50"
+                className="flex w-full items-center gap-3 rounded-2xl border border-line/60 bg-surface p-3 text-left transition hover:bg-surface-2 hover:border-primary/40 disabled:opacity-40"
               >
                 {b.image_url ? (
-                  <img src={b.image_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                  <img src={b.image_url} alt="" className="h-11 w-11 rounded-xl object-cover border border-line/40 shadow-sm" />
                 ) : (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                    <BookmarkIcon size={16} />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                    <BookmarkIcon size={18} />
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-ink">{b.title}</span>
-                  <span className="block text-xs text-muted">
+                  <span className="block truncate text-sm font-extrabold text-ink">{b.title}</span>
+                  <span className="block text-xs font-semibold text-muted">
                     {BOOKMARK_CATEGORIES.find((c) => c.value === b.category)?.label}
                   </span>
                 </span>
                 {busy === b.id ? (
                   <Spinner className="h-4 w-4" />
                 ) : (
-                  <span className="text-xs font-extrabold text-primary">{dup ? 'Added' : '+ Add'}</span>
+                  <span className={cn('text-xs font-black', dup ? 'text-muted' : 'text-primary')}>
+                    {dup ? 'Added' : '+ Add'}
+                  </span>
                 )}
               </button>
             )

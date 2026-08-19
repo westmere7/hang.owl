@@ -34,7 +34,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
         })),
         currencyDecimals(hangout.currency),
       ),
-    [members, spends, hangout.currency],
+        [members, spends, hangout.currency],
   )
 
   const editable = canEditRecap(hangout, me)
@@ -43,18 +43,18 @@ export function RecapTab({ data }: { data: HangoutData }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl3 bg-surface p-5 shadow-card">
-        <p className="text-xs font-extrabold uppercase tracking-wide text-muted">Hangout total</p>
-        <p className="mt-0.5 text-3xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</p>
-        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
-          <Info size={13} className="shrink-0" />
-          Tap a person to see their breakdown and who to settle with.
+      {/* Total summary card */}
+      <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card">
+        <p className="text-[11px] font-black uppercase tracking-wider text-muted">Hangout Total Spent</p>
+        <p className="mt-0.5 text-3xl sm:text-4xl font-black tabular-nums text-ink">{fmtMoney(recap.total, cur)}</p>
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+          <Info size={14} className="shrink-0 text-primary" />
+          Tap any person's card below to see their exact share breakdown and payback details.
         </p>
       </div>
 
-      {/* Every person gets a card — including those who come out even. Tap to
-          expand their breakdown + who they pay / get paid by. */}
-      <div className="space-y-2">
+      {/* Member settlement cards */}
+      <div className="space-y-2.5">
         {recap.rows.map((row) => (
           <PersonCard
             key={row.memberId}
@@ -79,8 +79,6 @@ export function RecapTab({ data }: { data: HangoutData }) {
   )
 }
 
-/** One expandable card per person. Collapsed: net owes/gets/even. Expanded:
- *  money breakdown + who they settle with + (admin) an adjust button. */
 function PersonCard({
   row,
   member,
@@ -102,63 +100,63 @@ function PersonCard({
   const getsFrom = settlements.filter((s) => s.toId === row.memberId)
 
   return (
-    <div className="overflow-hidden rounded-xl3 bg-surface shadow-card">
+    <div className="overflow-hidden rounded-2xl border border-line/60 bg-surface shadow-card transition-all">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 p-3.5 text-left transition hover:bg-surface-2"
+        className="flex w-full items-center gap-3 sm:gap-3.5 p-4 text-left transition hover:bg-surface-2/60 select-none"
         aria-expanded={open}
       >
-        <Avatar name={row.name} />
+        <Avatar name={row.name} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-extrabold text-ink">{row.name}</span>
-            {member?.is_admin && <Crown size={12} className="shrink-0 text-accent-deep" />}
+            <span className="truncate text-sm sm:text-base font-black text-ink">{row.name}</span>
+            {member?.is_admin && <Crown size={13} className="shrink-0 text-warning" />}
           </div>
-          <span className={cn('text-[11px] font-extrabold uppercase tracking-wide', tone)}>
-            {owes ? 'Owes' : receives ? 'Gets back' : 'Even'}
+          <span className={cn('text-[11px] font-black uppercase tracking-wider', tone)}>
+            {owes ? 'Owes' : receives ? 'Gets back' : 'Settled'}
           </span>
         </div>
-        <span className={cn('shrink-0 text-base font-black tabular-nums', tone)}>
+        <span className={cn('shrink-0 text-base sm:text-lg font-black tabular-nums', tone)}>
           {owes || receives ? fmtMoney(Math.abs(row.balance), currency) : '—'}
         </span>
         <ChevronDown
           size={16}
-          className={cn('shrink-0 text-muted transition-transform', open && 'rotate-180')}
+          className={cn('shrink-0 text-muted transition-transform duration-200', open && 'rotate-180')}
         />
       </button>
 
       {open && (
-        <div className="space-y-3 border-t border-line px-3.5 py-3">
+        <div className="space-y-3.5 border-t border-line/50 bg-surface-2/30 px-4 py-3.5">
           {/* Money breakdown */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <span>
-              <span className="text-muted">Share </span>
-              <span className={cn('font-bold tabular-nums', row.overridden ? 'text-accent-deep' : 'text-ink')}>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <div className="rounded-xl border border-line/50 bg-surface-2/80 px-3 py-1.5">
+              <span className="text-muted font-bold">Share: </span>
+              <span className={cn('font-black tabular-nums', row.overridden ? 'text-accent' : 'text-ink')}>
                 {fmtMoney(row.share, currency)}
               </span>
-              {row.overridden && <span className="text-accent-deep"> (adjusted)</span>}
-            </span>
-            <span>
-              <span className="text-muted">Paid </span>
-              <span className="font-bold tabular-nums text-ink">{fmtMoney(row.paid, currency)}</span>
-            </span>
+              {row.overridden && <span className="text-accent font-bold"> (fixed)</span>}
+            </div>
+            <div className="rounded-xl border border-line/50 bg-surface-2/80 px-3 py-1.5">
+              <span className="text-muted font-bold">Paid: </span>
+              <span className="font-black tabular-nums text-ink">{fmtMoney(row.paid, currency)}</span>
+            </div>
             {row.deposit > 0 && (
-              <span>
-                <span className="text-muted">Deposit </span>
-                <span className="font-bold tabular-nums text-ink">{fmtMoney(row.deposit, currency)}</span>
-              </span>
+              <div className="rounded-xl border border-line/50 bg-surface-2/80 px-3 py-1.5">
+                <span className="text-muted font-bold">Deposit: </span>
+                <span className="font-black tabular-nums text-ink">{fmtMoney(row.deposit, currency)}</span>
+              </div>
             )}
           </div>
 
           {/* Who to settle with */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {!owes && !receives ? (
-              <p className="text-xs font-semibold text-muted">All settled — nothing to pay.</p>
+              <p className="text-xs font-bold text-muted">All settled — nothing to transfer.</p>
             ) : owes ? (
               pays.map((s, i) => (
-                <div key={i} className="flex items-center justify-between rounded-2xl bg-surface-2 px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
-                    <ArrowRight size={13} className="text-danger" />
+                <div key={i} className="flex items-center justify-between rounded-xl border border-danger/20 bg-danger-soft/40 px-3.5 py-2.5">
+                  <span className="flex items-center gap-2 text-xs font-black text-ink">
+                    <ArrowRight size={14} className="text-danger" />
                     Pay {s.toName}
                   </span>
                   <span className="text-xs font-black tabular-nums text-danger">
@@ -168,9 +166,9 @@ function PersonCard({
               ))
             ) : (
               getsFrom.map((s, i) => (
-                <div key={i} className="flex items-center justify-between rounded-2xl bg-surface-2 px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
-                    <Avatar name={s.fromName} size="sm" className="!h-4.5 !w-4.5 !text-[8px] !ring-0" />
+                <div key={i} className="flex items-center justify-between rounded-xl border border-success/20 bg-success-soft/40 px-3.5 py-2.5">
+                  <span className="flex items-center gap-2 text-xs font-black text-ink">
+                    <Avatar name={s.fromName} size="sm" className="!h-5 !w-5 !text-[9px] !ring-0" />
                     {s.fromName} pays you
                   </span>
                   <span className="text-xs font-black tabular-nums text-success">
@@ -205,8 +203,6 @@ function AdjustModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  // The organizer holds everyone's deposits, so a deposit "to themselves" is
-  // meaningless (see computeRecap). Don't offer them the field.
   const isHolder = member.is_admin
   const [deposit, setDeposit] = useState(String(member.deposit ?? 0))
   const [useOverride, setUseOverride] = useState(member.share_override !== null)
@@ -243,26 +239,26 @@ function AdjustModal({
       onClose={onClose}
       title={`Adjust — ${member.display_name}`}
       footer={
-        <Button variant="accent" full onClick={() => void save()} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+        <Button variant="primary" full size="lg" onClick={() => void save()} disabled={saving}>
+          {saving ? 'Saving…' : 'Save changes'}
         </Button>
       }
     >
       <div className="space-y-4 pb-2">
         {isHolder ? (
-          <div className="flex items-start gap-2.5 rounded-xl3 bg-primary-soft/60 p-3.5">
+          <div className="flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary-soft/60 p-3.5">
             <PiggyBank size={18} className="mt-0.5 shrink-0 text-primary" />
-            <p className="text-xs font-semibold text-ink">
-              You're the organizer, so you <span className="font-extrabold">hold</span> the group's
+            <p className="text-xs font-bold text-ink">
+              You're the organizer, so you <span className="font-black">hold</span> the group's
               deposits — you can't deposit to yourself. Open each{' '}
-              <span className="font-extrabold">guest</span> instead and enter what they handed you
-              before the hangout; that reduces what they owe and what you're owed back.
+              <span className="font-black">guest</span> instead and enter what they handed you
+              upfront.
             </p>
           </div>
         ) : (
           <Field
             label={`Deposit (${currency})`}
-            hint="Money this person already handed to the organizer before/during the hangout."
+            hint="Money this person already handed to the organizer upfront."
           >
             <div className="flex items-center gap-2">
               <PiggyBank size={20} className="shrink-0 text-primary" />
@@ -278,12 +274,12 @@ function AdjustModal({
           </Field>
         )}
 
-        <div className="rounded-xl3 bg-surface-2 p-3">
+        <div className="rounded-2xl border border-line/60 bg-surface-2/60 p-3">
           <Toggle
             checked={useOverride}
             onChange={setUseOverride}
             label="Override their share"
-            description="Fix this person's total share (e.g. they offered to cover more). The difference is spread across everyone else."
+            description="Fix this person's total share (e.g. they generously offered to cover more). The difference is spread across everyone else."
           />
           {useOverride && (
             <div className="px-1 pb-1 pt-2">

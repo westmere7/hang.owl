@@ -98,14 +98,14 @@ export function AuthModal({
       onClose={onClose}
       title={mode === 'signup' ? 'Create your account' : 'Welcome back'}
       footer={
-        <Button variant="accent" full size="lg" onClick={() => void submit()} disabled={busy}>
+        <Button variant="primary" full size="lg" onClick={() => void submit()} disabled={busy}>
           {busy ? 'Just a sec…' : mode === 'signup' ? 'Create account' : 'Sign in'}
         </Button>
       }
     >
       <div className="space-y-4 pb-2">
         {reason && (
-          <p className="rounded-2xl bg-primary-soft/60 px-4 py-2.5 text-sm font-semibold text-ink">
+          <p className="rounded-2xl border border-primary/30 bg-primary-soft/60 px-4 py-3 text-xs sm:text-sm font-semibold text-ink">
             {reason}
           </p>
         )}

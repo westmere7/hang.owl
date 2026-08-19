@@ -56,17 +56,17 @@ export function BookmarksPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-ink">Bookmarks</h1>
-          <p className="text-sm text-muted">Places the team wants to visit, eat, drink & do.</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-ink">Places & Bookmarks</h1>
+          <p className="text-xs sm:text-sm font-semibold text-muted">Places the team wants to visit, eat, drink & do.</p>
         </div>
-        <Button variant="accent" onClick={() => setAdding(true)}>
+        <Button variant="primary" onClick={() => setAdding(true)} className="shadow-glow">
           <Plus size={16} />
           <span className="hidden sm:inline">Add place</span>
           <span className="sm:hidden">Add</span>
         </Button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         <Chip active={filter === 'all'} onClick={() => setFilter('all')}>
           All
         </Chip>
@@ -83,17 +83,17 @@ export function BookmarksPage() {
         <PageLoader />
       ) : visible.length === 0 ? (
         <EmptyState
-          icon={<BookmarkIcon size={26} />}
+          icon={<BookmarkIcon size={28} />}
           title="Nothing saved yet"
-          text="Paste a link to a restaurant, bar or spot — HangOwl fills in the title and photo for you."
+          text="Paste a link to a restaurant, bar or spot — HangOwl automatically grabs the title and photo preview for you."
           action={
-            <Button variant="accent" onClick={() => setAdding(true)}>
+            <Button variant="primary" onClick={() => setAdding(true)}>
               <Plus size={16} /> Add your first place
             </Button>
           }
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3.5 sm:grid-cols-2">
           {visible.map((b) => (
             <BookmarkCard
               key={b.id}
