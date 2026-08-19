@@ -119,44 +119,60 @@ function HangoutRow({ hangout }: { hangout: HangoutWithMembers }) {
   return (
     <button
       onClick={() => navigate(`/hangout/${hangout.id}`)}
-      className="flex w-full items-center gap-3.5 sm:gap-4 rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-4 text-left shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-pop active:scale-[0.99]"
+      className="flex w-full flex-col gap-3.5 rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-4 sm:p-5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-pop active:scale-[0.99] group"
     >
-      <span
-        className={cn(
-          'flex h-12 w-12 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-2xl shadow-sm',
-          ended ? 'bg-surface-2 text-muted' : 'bg-primary-soft text-primary shadow-glow',
-        )}
-      >
-        <Users size={22} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2">
-          <span className="truncate text-sm sm:text-base font-black text-ink">{hangout.name}</span>
-          {ended ? (
-            <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[10px] font-black uppercase text-muted border border-line/40">
-              Ended
-            </span>
-          ) : (
-            <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
-              Active
+      {/* Top Header: Group Icon + Title & Status Badge + Chevron */}
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm mt-0.5',
+              ended ? 'bg-surface-2 text-muted' : 'bg-primary-soft text-primary shadow-glow',
+            )}
+          >
+            <Users size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base sm:text-lg font-black text-ink leading-snug group-hover:text-primary transition-colors">
+                {hangout.name}
+              </h3>
+              {ended ? (
+                <span className="shrink-0 rounded-full bg-surface-2 px-2.5 py-0.5 text-[10px] font-black uppercase text-muted border border-line/40">
+                  Ended
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full bg-success-soft px-2.5 py-0.5 text-[10px] font-black uppercase text-success border border-success/30">
+                  Active
+                </span>
+              )}
+            </div>
+            {(hangout.starts_on || hangout.ends_on) && (
+              <p className="mt-1 text-xs font-semibold text-muted">
+                {dateRange(hangout.starts_on, hangout.ends_on)}
+              </p>
+            )}
+          </div>
+        </div>
+        <ChevronRight size={18} className="shrink-0 text-muted mt-1 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+      </div>
+
+      {/* Bottom Sub-bar: Guest Count + Avatar Stack */}
+      <div className="flex items-center justify-between border-t border-line/40 pt-2.5 w-full text-xs font-semibold text-muted">
+        <span className="flex items-center gap-1.5 font-bold">
+          <span>{members.length}/{hangout.expected_guests} guests</span>
+        </span>
+        <span className="flex -space-x-2">
+          {members.slice(0, 4).map((m) => (
+            <Avatar key={m.id} name={m.display_name} size="sm" className="!h-7 !w-7 !text-[10px] ring-2 ring-surface" />
+          ))}
+          {members.length > 4 && (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 text-[10px] font-black text-muted ring-2 ring-surface border border-line">
+              +{members.length - 4}
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-xs font-semibold text-muted">
-          {dateRange(hangout.starts_on, hangout.ends_on)} · {members.length}/{hangout.expected_guests} guests
-        </span>
-      </span>
-      <span className="flex -space-x-2.5">
-        {members.slice(0, 3).map((m) => (
-          <Avatar key={m.id} name={m.display_name} size="sm" />
-        ))}
-        {members.length > 3 && (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-[10px] font-black text-muted ring-2 ring-surface border border-line">
-            +{members.length - 3}
-          </span>
-        )}
-      </span>
-      <ChevronRight size={18} className="shrink-0 text-muted" />
+      </div>
     </button>
   )
 }
