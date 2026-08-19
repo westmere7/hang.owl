@@ -243,6 +243,7 @@ function CreateHangoutModal({ onClose, onCreated }: { onClose: () => void; onCre
       open
       onClose={onClose}
       title="New hangout"
+      wide
       footer={
         <Button variant="primary" full size="lg" onClick={() => void create()} disabled={saving || !name.trim()}>
           {saving ? 'Creating…' : 'Create hangout'}

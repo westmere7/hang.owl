@@ -132,6 +132,7 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
       open={open}
       onClose={onClose}
       title="Hangout settings"
+      wide
       footer={
         <div className="space-y-2.5">
           {/* Primary full-width Save button */}
