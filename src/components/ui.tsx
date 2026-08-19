@@ -399,9 +399,18 @@ export function Modal({
     }
   }, [open, onClose])
 
+  const handleFocus = (e: React.FocusEvent) => {
+    const target = e.target as HTMLElement
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }, 250)
+    }
+  }
+
   if (!open) return null
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 max-h-[100dvh] overflow-hidden">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-200"
         onClick={onClose}
@@ -411,7 +420,7 @@ export function Modal({
         role="dialog"
         aria-modal
         className={cn(
-          'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border-t border-line/60 bg-surface shadow-pop sm:rounded-3xl sm:border sm:border-line/60',
+          'relative flex max-h-[88dvh] sm:max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border-t border-line/60 bg-surface shadow-pop sm:rounded-3xl sm:border sm:border-line/60',
           wide ? 'sm:max-w-2xl' : 'sm:max-w-md',
         )}
       >
@@ -430,7 +439,12 @@ export function Modal({
             <X size={16} />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 overscroll-contain">{children}</div>
+        <div
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-4 overscroll-contain touch-pan-y"
+          onFocus={handleFocus}
+        >
+          {children}
+        </div>
         {footer && (
           <div className="shrink-0 border-t border-line/60 bg-surface/95 px-5 py-3.5 pb-safe backdrop-blur-md">
             {footer}

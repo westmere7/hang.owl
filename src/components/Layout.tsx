@@ -98,17 +98,17 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Mobile bottom nav dock */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 h-16 border-t border-line/60 bg-surface/90 px-3 pb-safe pt-1 backdrop-blur-xl md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around h-full">
+      <nav className="fixed inset-x-0 bottom-0 z-30 min-h-[4rem] border-t border-line/60 bg-surface/90 px-3 pb-safe pt-1.5 backdrop-blur-xl md:hidden">
+        <div className="mx-auto flex max-w-md items-center justify-around">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => navClass(isActive, true)}>
               {({ isActive }) => (
                 <>
-                  <div className={cn('relative flex h-8 w-8 items-center justify-center rounded-xl transition-all', isActive && 'bg-primary-soft text-primary shadow-sm')}>
-                    <Icon size={18} />
+                  <div className={cn('relative flex h-8 w-8 items-center justify-center rounded-xl transition-all shrink-0', isActive && 'bg-primary-soft text-primary shadow-sm')}>
+                    <Icon className="h-5 w-5 shrink-0" />
                   </div>
-                  <span>{label}</span>
-                  {isActive && <div className="h-1 w-3 rounded-full bg-primary" />}
+                  <span className="text-[11px] font-black tracking-tight">{label}</span>
+                  {isActive && <div className="h-1 w-3 rounded-full bg-primary shrink-0" />}
                 </>
               )}
             </NavLink>

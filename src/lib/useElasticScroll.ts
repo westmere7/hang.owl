@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 /**
  * Adds an elastic physics rubber-band spring bounce when scrolling past
@@ -38,12 +38,24 @@ export function useElasticScroll<T extends HTMLElement = HTMLElement>() {
 
     function onTouchStart(e: TouchEvent) {
       if (e.touches.length !== 1) return
+      if (
+        document.body.style.overflow === 'hidden' ||
+        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
+      ) {
+        return
+      }
       touchStartY = e.touches[0].clientY
       isPulling = false
     }
 
     function onTouchMove(e: TouchEvent) {
       if (e.touches.length !== 1) return
+      if (
+        document.body.style.overflow === 'hidden' ||
+        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
+      ) {
+        return
+      }
       const touchY = e.touches[0].clientY
       const deltaY = touchY - touchStartY
 
@@ -68,6 +80,12 @@ export function useElasticScroll<T extends HTMLElement = HTMLElement>() {
     }
 
     function onWheel(e: WheelEvent) {
+      if (
+        document.body.style.overflow === 'hidden' ||
+        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
+      ) {
+        return
+      }
       const isAtTop = window.scrollY <= 1 && e.deltaY < 0
       const isAtBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 && e.deltaY > 0
 
