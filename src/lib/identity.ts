@@ -22,23 +22,47 @@ export async function ensureSession(): Promise<Session> {
   return anon.session
 }
 
-export async function loadOrCreateProfile(userId: string): Promise<Profile> {
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle()
-  if (existing) return existing as Profile
+const inFlightProfiles = new Map<string, Promise<Profile>>()
 
-  // A returning guest on a fresh session still has their name cached.
-  const name = getCachedName() ?? ''
-  const { data: created, error } = await supabase
-    .from('profiles')
-    .insert({ id: userId, display_name: name })
-    .select('*')
-    .single()
-  if (error) throw error
-  return created as Profile
+export async function loadOrCreateProfile(userId: string): Promise<Profile> {
+  const existingPromise = inFlightProfiles.get(userId)
+  if (existingPromise) return existingPromise
+
+  const promise = (async () => {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+    if (existing) return existing as Profile
+
+    // A returning guest on a fresh session still has their name cached.
+    const name = getCachedName() ?? ''
+    const { data: created, error } = await supabase
+      .from('profiles')
+      .upsert({ id: userId, display_name: name }, { onConflict: 'id' })
+      .select('*')
+      .single()
+
+    if (error) {
+      // In case of a race condition where the profile was created concurrently
+      const { data: fallback } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+      if (fallback) return fallback as Profile
+      throw error
+    }
+    return created as Profile
+  })()
+
+  inFlightProfiles.set(userId, promise)
+  try {
+    return await promise
+  } finally {
+    inFlightProfiles.delete(userId)
+  }
 }
 
 export async function saveDisplayName(userId: string, name: string): Promise<void> {
