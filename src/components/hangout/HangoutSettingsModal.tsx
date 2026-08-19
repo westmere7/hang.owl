@@ -15,9 +15,11 @@ interface Props {
   reload: () => void
 }
 
-function getHangoutCap(hangout: Hangout): number {
-  if (hangout.spending_cap !== undefined && hangout.spending_cap !== null) {
-    return Number(hangout.spending_cap)
+export function getHangoutCap(hangout: Hangout): number {
+  if (hangout.spending_cap !== undefined) {
+    return hangout.spending_cap !== null && Number(hangout.spending_cap) > 0
+      ? Number(hangout.spending_cap)
+      : 0
   }
   const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
   return raw && Number(raw) > 0 ? Number(raw) : 0

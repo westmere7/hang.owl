@@ -73,7 +73,17 @@ export function HangoutPage() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'hangouts', filter: `id=eq.${id}` },
-        () => refresh(),
+        (payload) => {
+          const newCap = (payload?.new as Hangout | undefined)?.spending_cap
+          if (newCap !== undefined) {
+            if (newCap && Number(newCap) > 0) {
+              localStorage.setItem(`hangowl_cap_${id}`, String(newCap))
+            } else {
+              localStorage.removeItem(`hangowl_cap_${id}`)
+            }
+          }
+          refresh()
+        },
       )
       .on(
         'postgres_changes',
@@ -93,7 +103,16 @@ export function HangoutPage() {
       .on(
         'broadcast',
         { event: 'sync' },
-        () => refresh(),
+        (payload) => {
+          if (payload?.payload?.cap !== undefined) {
+            if (payload.payload.cap && Number(payload.payload.cap) > 0) {
+              localStorage.setItem(`hangowl_cap_${id}`, String(payload.payload.cap))
+            } else {
+              localStorage.removeItem(`hangowl_cap_${id}`)
+            }
+          }
+          refresh()
+        },
       )
       .subscribe()
 

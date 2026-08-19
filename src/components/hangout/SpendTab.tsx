@@ -16,8 +16,10 @@ export function SpendTab({ data }: { data: HangoutData }) {
 
   const rawCap = localStorage.getItem(`hangowl_cap_${hangout.id}`)
   const spendingCap =
-    hangout.spending_cap !== undefined && hangout.spending_cap !== null
-      ? Number(hangout.spending_cap)
+    hangout.spending_cap !== undefined
+      ? hangout.spending_cap !== null && Number(hangout.spending_cap) > 0
+        ? Number(hangout.spending_cap)
+        : 0
       : rawCap && Number(rawCap) > 0
         ? Number(rawCap)
         : 0
