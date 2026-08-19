@@ -15,6 +15,14 @@ interface Props {
   reload: () => void
 }
 
+function getHangoutCap(hangout: Hangout): number {
+  if (hangout.spending_cap !== undefined && hangout.spending_cap !== null) {
+    return Number(hangout.spending_cap)
+  }
+  const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
+  return raw && Number(raw) > 0 ? Number(raw) : 0
+}
+
 /** Admin-only: rename, dates, guest count, currency, budget cap, guest permissions, end/delete. */
 export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) {
   const navigate = useNavigate()
@@ -25,8 +33,8 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
   const [currency, setCurrency] = useState(hangout.currency)
 
   const [capInput, setCapInput] = useState(() => {
-    const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
-    return raw && Number(raw) > 0 ? formatCurrencyInput(Number(raw), hangout.currency) : ''
+    const cap = getHangoutCap(hangout)
+    return cap > 0 ? formatCurrencyInput(cap, hangout.currency) : ''
   })
 
   const [perms, setPerms] = useState({
@@ -45,8 +53,8 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
       setEndsOn(hangout.ends_on ?? '')
       setGuests(hangout.expected_guests)
       setCurrency(hangout.currency)
-      const raw = localStorage.getItem(`hangowl_cap_${hangout.id}`)
-      setCapInput(raw && Number(raw) > 0 ? formatCurrencyInput(Number(raw), hangout.currency) : '')
+      const cap = getHangoutCap(hangout)
+      setCapInput(cap > 0 ? formatCurrencyInput(cap, hangout.currency) : '')
       setPerms({
         guest_can_add_spend: hangout.guest_can_add_spend,
         guest_can_edit_spend: hangout.guest_can_edit_spend,
@@ -58,8 +66,8 @@ export function HangoutSettingsModal({ open, onClose, hangout, reload }: Props) 
   }, [open, hangout])
 
   // Track if any changes have been made compared to initial values
-  const initialCap = localStorage.getItem(`hangowl_cap_${hangout.id}`) || ''
-  const initialCapFormatted = initialCap && Number(initialCap) > 0 ? formatCurrencyInput(Number(initialCap), hangout.currency) : ''
+  const dbCap = getHangoutCap(hangout)
+  const initialCapFormatted = dbCap > 0 ? formatCurrencyInput(dbCap, hangout.currency) : ''
 
   const hasNameChanged = name.trim() !== hangout.name
   const hasStartsChanged = startsOn !== (hangout.starts_on ?? '')
