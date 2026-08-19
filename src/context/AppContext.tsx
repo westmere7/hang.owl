@@ -106,10 +106,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cancelledRef.current = false
     ;(async () => {
       try {
-        // The first Supabase call can blip on a cold start — retry before
-        // giving up so a single transient failure doesn't wall off the app.
-        const session = await retry(() => ensureSession())
-        await applyUser(session.user)
+        // The first Supabase call can blip on a cold start or session initialization —
+        // retry before giving up so a transient failure doesn't wall off the app.
+        await retry(async () => {
+          const session = await ensureSession()
+          await applyUser(session.user)
+        }, 4, 400)
       } catch (e) {
         if (!cancelledRef.current) setBootError(errorMessage(e))
       } finally {

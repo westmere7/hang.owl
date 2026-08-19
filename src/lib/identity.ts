@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import type { Profile } from '../types'
+import { retry } from './errors'
 
 const NAME_KEY = 'hangowl.name'
 
@@ -28,7 +29,7 @@ export async function loadOrCreateProfile(userId: string): Promise<Profile> {
   const existingPromise = inFlightProfiles.get(userId)
   if (existingPromise) return existingPromise
 
-  const promise = (async () => {
+  const promise = retry(async () => {
     const { data: existing } = await supabase
       .from('profiles')
       .select('*')
@@ -55,7 +56,7 @@ export async function loadOrCreateProfile(userId: string): Promise<Profile> {
       throw error
     }
     return created as Profile
-  })()
+  }, 4, 300)
 
   inFlightProfiles.set(userId, promise)
   try {
