@@ -37,6 +37,7 @@ export interface Hangout {
   currency: string
   status: 'active' | 'ended'
   admin_id: string
+  deposit_holder_id: string | null
   spending_cap?: number | null
   guest_can_add_spend: boolean
   guest_can_edit_spend: boolean

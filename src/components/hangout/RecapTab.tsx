@@ -1,5 +1,5 @@
 import { ArrowRight, Check, CheckCircle2, ChevronDown, Copy, Crown, Download, FileText, Minus, Pencil, PiggyBank, Receipt, Share2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { spendCategory } from '../../lib/categories'
 import { canEditRecap } from '../../lib/permissions'
@@ -10,7 +10,9 @@ import type { HangoutData } from '../../pages/Hangout'
 import { Avatar, Button, ErrorNote, Field, Input, Modal, Toggle, cn } from '../ui'
 
 function getSettlementKey(s: Settlement): string {
-  return `${s.fromId}->${s.toId}:${s.amount}`
+  // Keyed by the member pair only (not amount) so a "paid" mark survives when
+  // amounts recompute after a spend changes.
+  return `${s.fromId}->${s.toId}`
 }
 
 /**
@@ -24,9 +26,8 @@ export function RecapTab({ data }: { data: HangoutData }) {
   const cur = hangout.currency
 
   const adminMember = members.find((m) => m.is_admin) || members[0]
-  const [depositHolderId, setDepositHolderId] = useState<string>(() => {
-    return localStorage.getItem(`hangowl_holder_${hangout.id}`) || adminMember?.id || ''
-  })
+  // Shared deposit holder (from the DB); falls back to the admin when unset.
+  const depositHolderId = hangout.deposit_holder_id ?? adminMember?.id ?? ''
 
   const recap = useMemo(
     () =>
@@ -49,15 +50,29 @@ export function RecapTab({ data }: { data: HangoutData }) {
     [members, spends, hangout.currency, depositHolderId],
   )
 
-  // Track checked settlements in localStorage
-  const [settledKeys, setSettledKeys] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(`hangowl_settled_${hangout.id}`)
-      return raw ? new Set(JSON.parse(raw)) : new Set()
-    } catch {
-      return new Set()
+  // Settlement "paid" marks live in the DB (shared by the whole group), keyed
+  // by the from->to member pair. Loaded here and refreshed when the tab regains
+  // focus so everyone sees the same progress.
+  const [settledKeys, setSettledKeys] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      const { data: rows } = await supabase
+        .from('settlement_marks')
+        .select('from_member_id, to_member_id')
+        .eq('hangout_id', hangout.id)
+      if (active) {
+        setSettledKeys(new Set((rows ?? []).map((r) => `${r.from_member_id}->${r.to_member_id}`)))
+      }
     }
-  })
+    void load()
+    const onFocus = () => void load()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      active = false
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [hangout.id])
 
   // Separate payers (owe money) and receivers (get back money). Filter out neutral ($0)
   const payers = recap.rows.filter((r) => r.balance > 0.005)
@@ -72,60 +87,65 @@ export function RecapTab({ data }: { data: HangoutData }) {
   const settlePercent = totalSettlements > 0 ? Math.round((settledCount / totalSettlements) * 100) : 0
 
   async function toggleSettlement(key: string) {
-    const next = new Set(settledKeys)
-    if (next.has(key)) {
-      next.delete(key)
+    const [fromId, toId] = key.split('->')
+    const has = settledKeys.has(key)
+    setSettledKeys((prev) => {
+      const next = new Set(prev)
+      if (has) next.delete(key)
+      else next.add(key)
+      return next
+    })
+    if (has) {
+      await supabase
+        .from('settlement_marks')
+        .delete()
+        .eq('hangout_id', hangout.id)
+        .eq('from_member_id', fromId)
+        .eq('to_member_id', toId)
     } else {
-      next.add(key)
-    }
-    setSettledKeys(next)
-    try {
-      localStorage.setItem(`hangowl_settled_${hangout.id}`, JSON.stringify(Array.from(next)))
-    } catch {}
-
-    const isComplete = recap.settlements.length > 0 && recap.settlements.every((s) => next.has(getSettlementKey(s)))
-
-    if (isComplete && hangout.status !== 'ended') {
-      await supabase.from('hangouts').update({ status: 'ended' }).eq('id', hangout.id)
-      reload()
-    } else if (!isComplete && hangout.status === 'ended') {
-      await supabase.from('hangouts').update({ status: 'active' }).eq('id', hangout.id)
-      reload()
+      await supabase
+        .from('settlement_marks')
+        .upsert({ hangout_id: hangout.id, from_member_id: fromId, to_member_id: toId })
     }
   }
 
   async function toggleAllForMember(memberId: string, isPayer: boolean) {
-    const next = new Set(settledKeys)
     const memberSettlements = isPayer
       ? recap.settlements.filter((s) => s.fromId === memberId)
       : recap.settlements.filter((s) => s.toId === memberId)
-
     if (memberSettlements.length === 0) return
 
-    const allMemberDone = memberSettlements.every((s) => next.has(getSettlementKey(s)))
+    const keys = memberSettlements.map(getSettlementKey)
+    const allDone = keys.every((k) => settledKeys.has(k))
 
-    for (const s of memberSettlements) {
-      const key = getSettlementKey(s)
-      if (allMemberDone) {
-        next.delete(key)
-      } else {
-        next.add(key)
+    setSettledKeys((prev) => {
+      const next = new Set(prev)
+      for (const k of keys) {
+        if (allDone) next.delete(k)
+        else next.add(k)
       }
-    }
+      return next
+    })
 
-    setSettledKeys(next)
-    try {
-      localStorage.setItem(`hangowl_settled_${hangout.id}`, JSON.stringify(Array.from(next)))
-    } catch {}
-
-    const isComplete = recap.settlements.length > 0 && recap.settlements.every((s) => next.has(getSettlementKey(s)))
-
-    if (isComplete && hangout.status !== 'ended') {
-      await supabase.from('hangouts').update({ status: 'ended' }).eq('id', hangout.id)
-      reload()
-    } else if (!isComplete && hangout.status === 'ended') {
-      await supabase.from('hangouts').update({ status: 'active' }).eq('id', hangout.id)
-      reload()
+    if (allDone) {
+      await Promise.all(
+        memberSettlements.map((s) =>
+          supabase
+            .from('settlement_marks')
+            .delete()
+            .eq('hangout_id', hangout.id)
+            .eq('from_member_id', s.fromId)
+            .eq('to_member_id', s.toId),
+        ),
+      )
+    } else {
+      await supabase.from('settlement_marks').upsert(
+        memberSettlements.map((s) => ({
+          hangout_id: hangout.id,
+          from_member_id: s.fromId,
+          to_member_id: s.toId,
+        })),
+      )
     }
   }
 
@@ -148,7 +168,7 @@ export function RecapTab({ data }: { data: HangoutData }) {
               </span>
             </div>
             <p className="text-xs font-semibold text-muted mt-0.5">
-              Every member has transferred their share. This hangout is marked as completed.
+              Every member has transferred their share.
             </p>
           </div>
         </div>
@@ -315,10 +335,13 @@ export function RecapTab({ data }: { data: HangoutData }) {
           member={editingMember}
           currency={cur}
           isDepositHolder={editingMember.id === depositHolderId}
-          onSetDepositHolder={(isHolder) => {
-            const nextId = isHolder ? editingMember.id : adminMember?.id || ''
-            setDepositHolderId(nextId)
-            localStorage.setItem(`hangowl_holder_${hangout.id}`, nextId)
+          onSetDepositHolder={async (isHolder) => {
+            const nextId = isHolder ? editingMember.id : null
+            const { error } = await supabase.rpc('set_deposit_holder', {
+              p_hangout: hangout.id,
+              p_member: nextId,
+            })
+            if (!error) reload()
           }}
           onClose={() => setEditingMember(null)}
           onSaved={reload}

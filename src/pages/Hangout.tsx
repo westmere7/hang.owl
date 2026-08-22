@@ -1,6 +1,7 @@
-import { ArrowLeft, Bookmark, QrCode, Receipt, Scale, Settings2, UsersRound } from 'lucide-react'
+import { ArrowLeft, Bookmark, History, QrCode, Receipt, Scale, Settings2, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ActivityLogModal } from '../components/hangout/ActivityLogModal'
 import { BookmarksTab } from '../components/hangout/BookmarksTab'
 import { HangoutSettingsModal } from '../components/hangout/HangoutSettingsModal'
 import { ManageGuestsModal } from '../components/hangout/ManageGuestsModal'
@@ -32,6 +33,7 @@ export function HangoutPage() {
   const [qrOpen, setQrOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [guestsOpen, setGuestsOpen] = useState(false)
+  const [logOpen, setLogOpen] = useState(false)
   const [rev, setRev] = useState(0)
 
   const { data, loading, error, reload } = useAsync(async () => {
@@ -212,6 +214,18 @@ export function HangoutPage() {
               <span className="hidden sm:inline">Invite</span>
             </button>
 
+            {me && (
+              <button
+                type="button"
+                onClick={() => setLogOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
+                title="Activity log"
+                aria-label="Activity log"
+              >
+                <History size={16} />
+              </button>
+            )}
+
             {me?.is_admin && (
               <>
                 <button
@@ -284,6 +298,7 @@ export function HangoutPage() {
       {tab === 'recap' && <RecapTab key={rev} data={shared} />}
 
       <QRModal open={qrOpen} onClose={() => setQrOpen(false)} hangout={hangout} />
+      {me && <ActivityLogModal open={logOpen} onClose={() => setLogOpen(false)} hangoutId={hangout.id} />}
       {me?.is_admin && (
         <>
           <ManageGuestsModal
