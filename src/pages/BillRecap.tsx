@@ -135,17 +135,17 @@ export function BillRecapPage() {
         {/* Header — clean & premium, no background block */}
         <div className="border-b border-line/60 pb-5 pt-1">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
               {dateRange(data.starts_on, data.ends_on)}
             </p>
             <ShareLinkButton />
           </div>
-          <h1 className="mt-1.5 truncate text-lg font-black tracking-tight text-ink sm:text-xl">{data.name}</h1>
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-3xl font-black tabular-nums text-primary sm:text-4xl">
+          <h1 className="mt-1.5 truncate text-base font-bold tracking-tight text-muted sm:text-lg">{data.name}</h1>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-3xl font-black tabular-nums text-ink sm:text-4xl">
               {fmtMoney(recap.total, cur)}
             </span>
-            <span className="text-xs font-bold text-muted">
+            <span className="text-xs font-semibold text-muted">
               total · {data.members.length} people · {data.spends.length} spends
             </span>
           </div>
