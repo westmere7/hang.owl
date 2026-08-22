@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ChevronDown, Copy, SearchX, Share2, Users } from 'lucide-react'
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, SearchX, Share2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Avatar, PageLoader, cn } from '../components/ui'
@@ -339,7 +339,20 @@ function PersonRow({
           className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
           aria-expanded={open}
         >
-          <Avatar name={row.name} size="lg" />
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+              owes ? 'bg-danger-soft text-danger' : gets ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
+            )}
+          >
+            {owes ? (
+              <ArrowUpRight size={20} strokeWidth={2.75} />
+            ) : gets ? (
+              <ArrowDownLeft size={20} strokeWidth={2.75} />
+            ) : (
+              <Check size={18} strokeWidth={2.75} />
+            )}
+          </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-black text-ink">{row.name}</p>
             <p className={cn('text-xs font-black uppercase tracking-wider', tone)}>{label}</p>
