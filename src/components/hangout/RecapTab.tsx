@@ -226,19 +226,16 @@ export function RecapTab({ data }: { data: HangoutData }) {
         )}
 
         <div className="pt-2 border-t border-line/40">
-          <Button
-            type="button"
-            variant="outline"
-            size="md"
-            full
-            onClick={() =>
-              window.open(`${window.location.origin}/bill/${hangout.code}`, '_blank', 'noopener')
-            }
-            className="font-black gap-2 border-primary/40 text-primary hover:bg-primary-soft"
+          {/* A real link (not window.open) so popup blockers don't eat it. */}
+          <a
+            href={`/bill/${hangout.code}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-surface px-5 py-2.5 text-sm font-black text-primary transition-colors hover:bg-primary-soft"
           >
             <ExternalLink size={16} />
             Open payment page
-          </Button>
+          </a>
         </div>
       </div>
 
