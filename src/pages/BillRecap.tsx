@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ChevronDown, Copy, SearchX, Users } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, Copy, SearchX, Share2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Avatar, PageLoader, cn } from '../components/ui'
@@ -132,25 +132,29 @@ export function BillRecapPage() {
   return (
     <div className="min-h-dvh bg-bg">
       <div className="mx-auto w-full max-w-lg px-4 pb-14 pt-6 sm:pt-8">
-        {/* Hangout hero */}
-        <div className="rounded-3xl bg-gradient-to-br from-primary to-primary-deep p-5 text-white shadow-pop">
-          <p className="text-xs font-bold text-white/70">{dateRange(data.starts_on, data.ends_on)}</p>
-          <h1 className="mt-0.5 text-2xl font-black tracking-tight">{data.name}</h1>
-          <div className="mt-3 flex items-end justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-wider text-white/60">Total bill</p>
-              <p className="text-3xl font-black tabular-nums">{fmtMoney(recap.total, cur)}</p>
-            </div>
-            <p className="text-xs font-bold text-white/70">
-              {data.members.length} people · {data.spends.length} spends
+        {/* Header — clean & premium, no background block */}
+        <div className="border-b border-line/60 pb-5 pt-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted">
+              {dateRange(data.starts_on, data.ends_on)}
             </p>
+            <ShareLinkButton />
+          </div>
+          <h1 className="mt-1.5 truncate text-lg font-black tracking-tight text-ink sm:text-xl">{data.name}</h1>
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-3xl font-black tabular-nums text-primary sm:text-4xl">
+              {fmtMoney(recap.total, cur)}
+            </span>
+            <span className="text-xs font-bold text-muted">
+              total · {data.members.length} people · {data.spends.length} spends
+            </span>
           </div>
         </div>
 
-        {/* Who pays what — the headline section */}
-        <div className="mb-3 mt-8 px-0.5">
-          <h2 className="text-xl font-black tracking-tight text-ink">Who pays what</h2>
-          <p className="text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
+        {/* Who pays what — the headline section, most prominent on the page */}
+        <div className="mb-3.5 mt-7">
+          <h2 className="text-2xl font-black tracking-tight text-ink">Who pays what</h2>
+          <p className="mt-0.5 text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
         </div>
         <div className="space-y-2.5">
           {rows.map((row) => (
@@ -233,6 +237,33 @@ function CopyBtn({ value, className }: { value: string; className?: string }) {
       )}
     >
       {copied ? <Check size={14} strokeWidth={3} /> : <Copy size={14} />}
+    </button>
+  )
+}
+
+/** Copies this page's link — for resharing the bill. */
+function ShareLinkButton() {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard
+          .writeText(window.location.href)
+          .then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1400)
+          })
+          .catch(() => {})
+      }}
+      title="Copy link"
+      aria-label="Copy link"
+      className={cn(
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-line/60 bg-surface-2/60 transition hover:border-primary/40 hover:text-ink active:scale-90',
+        copied ? 'text-success' : 'text-muted',
+      )}
+    >
+      {copied ? <Check size={16} strokeWidth={3} /> : <Share2 size={16} />}
     </button>
   )
 }

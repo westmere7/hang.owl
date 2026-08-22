@@ -1,4 +1,4 @@
-import { ArrowLeft, Bookmark, History, QrCode, Receipt, Scale, Settings2, UsersRound } from 'lucide-react'
+import { ArrowLeft, Bookmark, Check, History, QrCode, Receipt, Scale, Settings2, Share2, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ActivityLogModal } from '../components/hangout/ActivityLogModal'
@@ -34,6 +34,7 @@ export function HangoutPage() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [guestsOpen, setGuestsOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
+  const [copiedShare, setCopiedShare] = useState(false)
   const [rev, setRev] = useState(0)
 
   const { data, loading, error, reload } = useAsync(async () => {
@@ -213,6 +214,26 @@ export function HangoutPage() {
               <QrCode size={15} />
               <span className="hidden sm:inline">Invite</span>
             </button>
+
+            {me && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(`${window.location.origin}/bill/${hangout.code}`)
+                    .then(() => {
+                      setCopiedShare(true)
+                      setTimeout(() => setCopiedShare(false), 1500)
+                    })
+                    .catch(() => {})
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-line/60 bg-surface-2/80 text-muted transition hover:text-ink hover:border-primary/40 active:scale-95"
+                title="Copy payment link"
+                aria-label="Copy payment link"
+              >
+                {copiedShare ? <Check size={16} className="text-success" /> : <Share2 size={16} />}
+              </button>
+            )}
 
             {me && (
               <button
