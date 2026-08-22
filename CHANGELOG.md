@@ -19,6 +19,11 @@ notifies users when a newer build has been deployed.
 
 ## 0.2.0
 
+- **Locked-down access (security)** — a hangout's data is now readable only by
+  its members. Hangouts can no longer be enumerated (invite codes were exposed
+  before); the QR join flow looks a hangout up by its secret code through a
+  `security definer` function. Bill photos moved to a private bucket served via
+  short-lived signed URLs, readable only by members of the owning hangout.
 - **Accounts** — email/password sign up, sign in, and sign out. Creating a
   hangout now requires an account; guests still join by QR with just a name.
   Signing up upgrades an anonymous guest in place, keeping their data.

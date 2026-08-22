@@ -1,5 +1,5 @@
 import { Camera, Pencil, Plus, Receipt, RotateCcw, Target, Users, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { SPEND_CATEGORIES, spendCategory } from '../../lib/categories'
 import { fmtDateFull, fmtMoney, fmtTime, formatCurrencyInput, parseCurrencyInput, toLocalInput } from '../../lib/format'
@@ -273,8 +273,21 @@ function SpendForm({
   const [spentAt, setSpentAt] = useState(() => toLocalInput(spend?.spent_at ?? new Date().toISOString()))
   const [note, setNote] = useState(spend?.note ?? '')
   const [billFile, setBillFile] = useState<File | null>(null)
-  const [billPreview, setBillPreview] = useState<string | null>(spend?.bill_path ? billUrl(spend.bill_path) : null)
+  const [billPreview, setBillPreview] = useState<string | null>(null)
   const [removeBill, setRemoveBill] = useState(false)
+
+  // The bills bucket is private, so fetch a short-lived signed URL for an
+  // existing bill. Don't clobber a local preview if the user just picked a file.
+  useEffect(() => {
+    if (!spend?.bill_path) return
+    let active = true
+    void billUrl(spend.bill_path).then((u) => {
+      if (active && u) setBillPreview((prev) => prev ?? u)
+    })
+    return () => {
+      active = false
+    }
+  }, [spend?.bill_path])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

@@ -13,7 +13,13 @@ export const supabase = createClient(
   anonKey ?? 'placeholder',
 )
 
-/** Public URL for a file in the `bills` storage bucket. */
-export function billUrl(path: string): string {
-  return supabase.storage.from('bills').getPublicUrl(path).data.publicUrl
+/**
+ * Short-lived signed URL for a file in the private `bills` bucket. Only
+ * members of the owning hangout can mint one (enforced by storage RLS).
+ * Returns null if the file is gone or access is denied.
+ */
+export async function billUrl(path: string, expiresInSeconds = 3600): Promise<string | null> {
+  const { data, error } = await supabase.storage.from('bills').createSignedUrl(path, expiresInSeconds)
+  if (error) return null
+  return data.signedUrl
 }

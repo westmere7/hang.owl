@@ -27,13 +27,11 @@ export function JoinPage() {
 
   const { data, loading } = useAsync(async () => {
     if (!code) return null
-    const { data: hangout, error } = await supabase
-      .from('hangouts')
-      .select('*, hangout_members(*)')
-      .eq('code', code)
-      .maybeSingle()
+    // Non-members can't read the hangouts table directly (RLS); look it up by
+    // its secret code via a SECURITY DEFINER function instead.
+    const { data: result, error } = await supabase.rpc('get_hangout_by_code', { p_code: code })
     if (error) throw error
-    return hangout as (Hangout & { hangout_members: Member[] }) | null
+    return (result as (Hangout & { hangout_members: Member[] }) | null) ?? null
   }, [code, ready])
 
   const hangout = data
