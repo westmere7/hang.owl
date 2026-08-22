@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { errorMessage } from './errors'
 
 /** Tiny fetch-state hook: data / loading / error + manual reload. */
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
@@ -14,7 +15,7 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
       setData(await fnRef.current())
       setError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }

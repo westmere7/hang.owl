@@ -29,7 +29,9 @@ export function HomePage() {
     if (!userId) return []
     const { data, error } = await supabase
       .from('hangout_members')
-      .select('hangout:hangouts(*, hangout_members(id, display_name))')
+      // Disambiguate the embed: hangouts now has two FKs to hangout_members
+      // (hangout_id, and deposit_holder_id), so PostgREST needs the hint.
+      .select('hangout:hangouts!hangout_id(*, hangout_members!hangout_id(id, display_name))')
       .eq('profile_id', userId)
     if (error) throw error
     const hangouts = (data ?? [])
