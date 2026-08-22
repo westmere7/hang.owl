@@ -18,8 +18,10 @@ export function NameGate() {
   const [error, setError] = useState<string | null>(null)
   const [authOpen, setAuthOpen] = useState(false)
 
-  const onJoinPage = location.pathname.startsWith('/join/')
-  if (!ready || !profile || profile.display_name || onJoinPage) return null
+  // Public, no-account pages must never be blocked by the name prompt.
+  const isPublicPage =
+    location.pathname.startsWith('/join/') || location.pathname.startsWith('/bill/')
+  if (!ready || !profile || profile.display_name || isPublicPage) return null
 
   async function submit() {
     const name = value.trim()

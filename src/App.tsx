@@ -7,6 +7,7 @@ import { OwlLogo } from './components/OwlLogo'
 import { Button, ErrorNote, Spinner } from './components/ui'
 import { AppProvider, useApp } from './context/AppContext'
 import { isConfigured } from './lib/supabase'
+import { BillRecapPage } from './pages/BillRecap'
 import { BookmarksPage } from './pages/Bookmarks'
 import { HangoutPage } from './pages/Hangout'
 import { HomePage } from './pages/Home'
@@ -46,6 +47,7 @@ function Shell() {
     <>
       <Routes>
         <Route path="/join/:code" element={<JoinPage />} />
+        <Route path="/bill/:code" element={<BillRecapPage />} />
         <Route
           element={
             <Layout>

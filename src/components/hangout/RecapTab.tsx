@@ -1,4 +1,4 @@
-import { ArrowRight, Check, CheckCircle2, ChevronDown, Copy, Crown, Download, FileText, Minus, Pencil, PiggyBank, Receipt, Share2, X } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, Copy, Crown, Download, Minus, Pencil, PiggyBank, Receipt, Share2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { spendCategory } from '../../lib/categories'
@@ -236,8 +236,8 @@ export function RecapTab({ data }: { data: HangoutData }) {
             onClick={() => setShowFullRecap(true)}
             className="font-black gap-2 border-primary/40 text-primary hover:bg-primary-soft"
           >
-            <FileText size={16} />
-            Full bill recap
+            <Share2 size={16} />
+            Share payment info
           </Button>
         </div>
       </div>
@@ -768,6 +768,16 @@ function FullBillRecapModal({
   const cur = hangout.currency
   const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const [copied, setCopied] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const shareLink = `${window.location.origin}/bill/${hangout.code}`
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(shareLink)
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    } catch {}
+  }
 
   const textReport = useMemo(() => {
     let text = `📊 FULL FINANCIAL RECAP - ${hangout.name.toUpperCase()}\n`
@@ -827,8 +837,8 @@ function FullBillRecapModal({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Full Bill Recap - ${hangout.name}`,
-          text: textReport,
+          title: `${hangout.name} — payment info`,
+          url: shareLink,
         })
       } catch {}
     } else {
@@ -1010,7 +1020,7 @@ function FullBillRecapModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Full bill & trip financial recap"
+      title="Share payment info"
       wide
       footer={
         <div className="flex flex-col sm:flex-row gap-2.5">
@@ -1052,6 +1062,29 @@ function FullBillRecapModal({
       }
     >
       <div className="space-y-6 pb-2">
+        {/* Shareable public link (no account needed) */}
+        <div className="space-y-2.5 rounded-2xl border border-primary/30 bg-primary-soft/50 p-4">
+          <p className="text-xs font-black uppercase tracking-wider text-primary">Public link</p>
+          <p className="text-xs font-semibold text-muted">
+            Anyone with this link can view the bill — no account needed.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-xl border border-line/60 bg-surface px-3 py-2 text-xs font-bold text-ink">
+              {shareLink}
+            </code>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={() => void handleCopyLink()}
+              className="shrink-0 gap-1.5"
+            >
+              {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+              {copiedLink ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+        </div>
+
         {/* Hangout Summary Hero */}
         <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface-2/60 p-5 shadow-sm space-y-3">
           <div className="flex items-start justify-between gap-3">
