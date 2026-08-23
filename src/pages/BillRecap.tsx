@@ -407,8 +407,9 @@ function PersonRow({
             />
           </div>
 
-          {/* Who to pay (each is a real transfer amount — copyable) */}
-          {owes && pays.length > 0 && (
+          {/* Who to pay — only when split across multiple people (otherwise it
+              just repeats the header + "You pay" total). */}
+          {owes && pays.length > 1 && (
             <div className="space-y-1.5">
               {pays.map((s, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2">
@@ -424,7 +425,7 @@ function PersonRow({
               ))}
             </div>
           )}
-          {gets && getsFrom.length > 0 && (
+          {gets && getsFrom.length > 1 && (
             <div className="space-y-1.5">
               {getsFrom.map((s, i) => (
                 <div key={i} className="flex items-center justify-between rounded-xl bg-surface px-3 py-2">
