@@ -8,6 +8,7 @@ import type { Hangout, Member } from '../../types'
 import type { HangoutData } from '../../pages/Hangout'
 import { Avatar, Button, ErrorNote, Field, Input, Modal, Spinner, Toggle, cn } from '../ui'
 import { BillViewerModal } from './BillViewerModal'
+import { compressImageToWebP } from '../../lib/image'
 
 function getSettlementKey(s: Settlement): string {
   // Keyed by the member pair only (not amount) so a "paid" mark survives when
@@ -771,9 +772,13 @@ function BillSection({
     try {
       const newPaths: string[] = []
       for (const file of Array.from(files)) {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const path = `${hangout.id}/${crypto.randomUUID()}.${ext}`
-        const { error: upErr } = await supabase.storage.from('bills').upload(path, file)
+        // Compress image to WebP format before uploading
+        const { blob } = await compressImageToWebP(file, file.name)
+        const path = `${hangout.id}/${crypto.randomUUID()}.webp`
+        const { error: upErr } = await supabase.storage.from('bills').upload(path, blob, {
+          contentType: 'image/webp',
+          upsert: true,
+        })
         if (upErr) throw upErr
         newPaths.push(path)
       }

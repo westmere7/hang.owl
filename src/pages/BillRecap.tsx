@@ -1,5 +1,5 @@
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, Receipt, SearchX, Share2, Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { BillViewerModal } from '../components/hangout/BillViewerModal'
 import { Avatar, PageLoader, cn } from '../components/ui'
@@ -130,19 +130,15 @@ export function BillRecapPage() {
     heldDeposits,
   })
 
-  const billPaths = useMemo(() => {
-    if (!data) return []
-    const list: string[] = []
-    if (data.bill_paths) {
-      for (const p of data.bill_paths) {
-        if (p && !list.includes(p)) list.push(p)
-      }
+  const billPaths: string[] = []
+  if (data.bill_paths) {
+    for (const p of data.bill_paths) {
+      if (p && !billPaths.includes(p)) billPaths.push(p)
     }
-    for (const s of data.spends) {
-      if (s.bill_path && !list.includes(s.bill_path)) list.push(s.bill_path)
-    }
-    return list
-  }, [data])
+  }
+  for (const s of data.spends) {
+    if (s.bill_path && !billPaths.includes(s.bill_path)) billPaths.push(s.bill_path)
+  }
 
   // Who pays first, then who's owed, then settled — most actionable on top.
   const rank = (r: MemberRecap) => (r.balance > 0.005 ? 0 : r.balance < -0.005 ? 1 : 2)
@@ -266,13 +262,15 @@ export function BillRecapPage() {
         )}
       </div>
 
-      <BillViewerModal
-        open={viewingBill}
-        onClose={() => setViewingBill(false)}
-        billPaths={billPaths}
-        initialIndex={billInitialIndex}
-        title={`${data.name} · Receipt`}
-      />
+      {viewingBill && billPaths.length > 0 && (
+        <BillViewerModal
+          open={viewingBill}
+          onClose={() => setViewingBill(false)}
+          billPaths={billPaths}
+          initialIndex={billInitialIndex}
+          title={`${data.name} · Receipt`}
+        />
+      )}
     </div>
   )
 }
