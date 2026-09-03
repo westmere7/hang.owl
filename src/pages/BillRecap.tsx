@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 import { BillViewerModal } from '../components/hangout/BillViewerModal'
 import { VietQRModal } from '../components/VietQRModal'
 import { Avatar, PageLoader, cn } from '../components/ui'
+import { OwlLogo } from '../components/OwlLogo'
 import { useApp } from '../context/AppContext'
 import { spendCategory } from '../lib/categories'
 import { currencyDecimals, dateRange, fmtDate, fmtMoney, fmtTime } from '../lib/format'
@@ -168,50 +169,102 @@ export function BillRecapPage() {
 
   return (
     <div className="min-h-dvh bg-bg">
-      <div className="mx-auto w-full max-w-lg px-4 pb-14 pt-6 sm:pt-8">
-        {/* Header — clean & premium, no background block */}
-        <div className="border-b border-line/60 pb-5 pt-1">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
-              {dateRange(data.starts_on, data.ends_on)}
-            </p>
-            <div className="flex items-center gap-2">
-              {billPaths.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBillInitialIndex(0)
-                    setViewingBill(true)
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/90 px-3 py-1.5 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white active:scale-95 shadow-sm"
-                  title="View actual bills"
-                  aria-label="View actual bills"
-                >
-                  <Receipt size={14} />
-                  <span>View actual bills</span>
-                  {billPaths.length > 1 && (
-                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-black text-on-primary px-1">
-                      {billPaths.length}
-                    </span>
-                  )}
-                </button>
-              )}
-              <ShareLinkButton />
+      <div className="mx-auto w-full max-w-lg px-4 pb-14 pt-5 sm:pt-7">
+        {/* Ambient atmospheric glow wrapper */}
+        <div className="relative mb-6">
+          <div className="pointer-events-none absolute -top-10 -right-8 h-44 w-44 rounded-full bg-primary/25 blur-3xl animate-glow-pulse" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-accent/15 blur-2xl animate-glow-pulse [animation-delay:2.5s]" />
+
+          {/* Premium Glass Hero Card */}
+          <div className="relative overflow-hidden rounded-3xl border border-line/70 bg-gradient-to-b from-surface/95 via-surface/90 to-surface/80 p-5 sm:p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:border-line hover:shadow-pop">
+            {/* Specular top-edge highlight */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+            {/* Top row: Live Status / Date + Action buttons */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+                </span>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted">
+                  {dateRange(data.starts_on, data.ends_on) || 'Bill Ready'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {billPaths.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillInitialIndex(0)
+                      setViewingBill(true)
+                    }}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/90 px-3 py-1.5 text-xs font-black text-primary transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-glow active:scale-95 shadow-xs"
+                    title="View actual bills"
+                    aria-label="View actual bills"
+                  >
+                    <Receipt size={13} className="transition-transform group-hover:scale-110" />
+                    <span>View actual bills</span>
+                    {billPaths.length > 1 && (
+                      <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-black text-on-primary px-1">
+                        {billPaths.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <ShareLinkButton />
+              </div>
             </div>
-          </div>
-          <h1 className="mt-1.5 truncate text-base font-bold tracking-tight text-muted sm:text-lg">{data.name}</h1>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-3xl font-black tabular-nums text-ink sm:text-4xl">
-              {fmtMoney(recap.total, cur)}
-            </span>
-            <span className="text-xs font-semibold text-muted">
-              total · {data.members.length} people · {data.spends.length} spends
-            </span>
+
+            {/* Title with Owl logo badge */}
+            <div className="mt-3.5 flex items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-soft/80 border border-primary/20 shadow-xs">
+                <OwlLogo size={20} />
+              </span>
+              <h1 className="truncate text-base sm:text-lg font-black tracking-tight text-ink">
+                {data.name}
+              </h1>
+            </div>
+
+            {/* Total display with subtle gradient & luster */}
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+              <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-tight bg-gradient-to-r from-ink via-ink to-primary/90 bg-clip-text text-transparent">
+                {fmtMoney(recap.total, cur)}
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted/80">
+                total bill
+              </span>
+            </div>
+
+            {/* Summary metrics micro-capsules */}
+            <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-line/40 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2/70 border border-line/40 px-2.5 py-1 text-[11px] font-bold text-muted">
+                <Users size={12} className="text-primary" />
+                <span>
+                  <strong className="text-ink font-black">{data.members.length}</strong> people
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2/70 border border-line/40 px-2.5 py-1 text-[11px] font-bold text-muted">
+                <Receipt size={12} className="text-primary" />
+                <span>
+                  <strong className="text-ink font-black">{data.spends.length}</strong> spends
+                </span>
+              </span>
+              {overrideReceiver && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary-soft/80 border border-primary/20 px-2.5 py-1 text-[11px] font-bold text-primary">
+                  <UserCheck size={12} />
+                  <span>
+                    Collector: <strong className="font-black">{overrideReceiver.display_name}</strong>
+                  </span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Who pays what — the headline section, most prominent on the page */}
-        <div className="mb-3.5 mt-7">
+        <div className="mb-3.5 mt-5">
           <h2 className="text-2xl font-black tracking-tight text-ink">Who pays what</h2>
           <p className="mt-0.5 text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
         </div>
@@ -381,11 +434,11 @@ function ShareLinkButton() {
       title="Copy link"
       aria-label="Copy link"
       className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-line/60 bg-surface-2/60 transition hover:border-primary/40 hover:text-ink active:scale-90',
-        copied ? 'text-success' : 'text-muted',
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line/70 bg-surface-2/80 transition-all duration-200 hover:border-primary/40 hover:text-ink active:scale-90 shadow-xs',
+        copied ? 'text-success border-success/40 bg-success-soft/50' : 'text-muted',
       )}
     >
-      {copied ? <Check size={16} strokeWidth={3} /> : <Share2 size={16} />}
+      {copied ? <Check size={14} strokeWidth={3} /> : <Share2 size={14} />}
     </button>
   )
 }
