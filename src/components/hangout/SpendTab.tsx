@@ -7,6 +7,7 @@ import { canAddSpend, canEditSpend } from '../../lib/permissions'
 import { billUrl, supabase } from '../../lib/supabase'
 import type { Member, Spend, SpendCategory } from '../../types'
 import type { HangoutData } from '../../pages/Hangout'
+import { compressImageToWebP } from '../../lib/image'
 import { Avatar, Button, Chip, EmptyState, ErrorNote, Field, Input, Modal, Select, Textarea, cn } from '../ui'
 
 export function SpendTab({ data }: { data: HangoutData }) {
@@ -461,9 +462,12 @@ function SpendForm({
     try {
       let billPath = removeBill ? null : (spend?.bill_path ?? null)
       if (billFile) {
-        const ext = billFile.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const path = `${hangoutId}/${crypto.randomUUID()}.${ext}`
-        const { error: upErr } = await supabase.storage.from('bills').upload(path, billFile)
+        const { blob } = await compressImageToWebP(billFile, billFile.name)
+        const path = `${hangoutId}/${crypto.randomUUID()}.webp`
+        const { error: upErr } = await supabase.storage.from('bills').upload(path, blob, {
+          contentType: 'image/webp',
+          upsert: true,
+        })
         if (upErr) throw upErr
         billPath = path
       }
