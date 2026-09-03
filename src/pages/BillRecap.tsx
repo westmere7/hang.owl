@@ -64,6 +64,7 @@ export function BillRecapPage() {
   const [viewingBill, setViewingBill] = useState(false)
   const [billInitialIndex, setBillInitialIndex] = useState(0)
   const [spendsOpen, setSpendsOpen] = useState(true)
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null)
 
   const { data, loading } = useAsync(async () => {
     if (!code) return null
@@ -169,18 +170,15 @@ export function BillRecapPage() {
 
   return (
     <div className="min-h-dvh bg-bg">
-      <div className="mx-auto w-full max-w-lg px-4 pb-14 pt-5 sm:pt-7">
-        {/* Ambient atmospheric glow wrapper */}
-        <div className="relative mb-6">
-          <div className="pointer-events-none absolute -top-10 -right-8 h-44 w-44 rounded-full bg-primary/25 blur-3xl animate-glow-pulse" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-accent/15 blur-2xl animate-glow-pulse [animation-delay:2.5s]" />
+      <div className="mx-auto w-full max-w-lg px-4 pb-14 pt-6 sm:pt-8">
+        {/* Atmospheric ambient glow (open, floating on canvas) */}
+        <div className="relative mb-7">
+          <div className="pointer-events-none absolute -top-16 -right-6 h-52 w-52 rounded-full bg-primary/20 blur-3xl animate-glow-pulse" />
+          <div className="pointer-events-none absolute -top-10 -left-6 h-40 w-40 rounded-full bg-accent/15 blur-2xl animate-glow-pulse [animation-delay:2.5s]" />
 
-          {/* Premium Glass Hero Card */}
-          <div className="relative overflow-hidden rounded-3xl border border-line/70 bg-gradient-to-b from-surface/95 via-surface/90 to-surface/80 p-5 sm:p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:border-line hover:shadow-pop">
-            {/* Specular top-edge highlight */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-
-            {/* Top row: Live Status / Date + Action buttons */}
+          {/* Open, un-boxy header */}
+          <div className="relative pt-1">
+            {/* Top row: Live status / Date on left, Action pills on right */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -200,7 +198,7 @@ export function BillRecapPage() {
                       setBillInitialIndex(0)
                       setViewingBill(true)
                     }}
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/90 px-3 py-1.5 text-xs font-black text-primary transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-glow active:scale-95 shadow-xs"
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-soft/80 px-3 py-1.5 text-xs font-black text-primary transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-glow active:scale-95 shadow-xs"
                     title="View actual bills"
                     aria-label="View actual bills"
                   >
@@ -217,59 +215,51 @@ export function BillRecapPage() {
               </div>
             </div>
 
-            {/* Title with Owl logo badge */}
-            <div className="mt-3.5 flex items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-soft/80 border border-primary/20 shadow-xs">
-                <OwlLogo size={20} />
+            {/* Hangout Title with Emblem */}
+            <div className="mt-4 flex items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary shadow-xs">
+                <OwlLogo size={18} />
               </span>
               <h1 className="truncate text-base sm:text-lg font-black tracking-tight text-ink">
                 {data.name}
               </h1>
             </div>
 
-            {/* Total display with subtle gradient & luster */}
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-              <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-tight bg-gradient-to-r from-ink via-ink to-primary/90 bg-clip-text text-transparent">
+            {/* Total display with luxury gradient luster */}
+            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+              <span className="text-4xl sm:text-5xl font-black tabular-nums tracking-tight bg-gradient-to-r from-ink via-ink to-primary/90 bg-clip-text text-transparent">
                 {fmtMoney(recap.total, cur)}
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted/80">
-                total bill
+              <span className="text-xs font-bold uppercase tracking-wider text-muted/70">
+                total
               </span>
             </div>
 
-            {/* Summary metrics micro-capsules */}
-            <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-line/40 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2/70 border border-line/40 px-2.5 py-1 text-[11px] font-bold text-muted">
-                <Users size={12} className="text-primary" />
-                <span>
-                  <strong className="text-ink font-black">{data.members.length}</strong> people
-                </span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2/70 border border-line/40 px-2.5 py-1 text-[11px] font-bold text-muted">
-                <Receipt size={12} className="text-primary" />
-                <span>
-                  <strong className="text-ink font-black">{data.spends.length}</strong> spends
-                </span>
-              </span>
+            {/* Clean inline summary line */}
+            <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-muted">
+              <span>{data.members.length} people</span>
+              <span>·</span>
+              <span>{data.spends.length} spends</span>
               {overrideReceiver && (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary-soft/80 border border-primary/20 px-2.5 py-1 text-[11px] font-bold text-primary">
-                  <UserCheck size={12} />
-                  <span>
-                    Collector: <strong className="font-black">{overrideReceiver.display_name}</strong>
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 text-primary font-bold">
+                    <UserCheck size={12} />
+                    Collector: {overrideReceiver.display_name}
                   </span>
-                </span>
+                </>
               )}
-            </div>
+            </p>
           </div>
         </div>
 
-        {/* Who pays what — the headline section, most prominent on the page */}
-        <div className="mb-3.5 mt-5">
-          <h2 className="text-2xl font-black tracking-tight text-ink">Who pays what</h2>
-          <p className="mt-0.5 text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
+        {/* Who pays what — single unified grouped ledger */}
+        <div className="mb-3 mt-7 flex items-center justify-between px-1">
+          <h2 className="text-xl font-black tracking-tight text-ink">Who pays what</h2>
+          <span className="text-xs font-semibold text-muted">Tap to expand</span>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="overflow-hidden rounded-3xl border border-line/50 bg-surface/80 backdrop-blur-sm divide-y divide-line/35 shadow-card">
           {rows.map((row) => (
             <PersonRow
               key={row.memberId}
@@ -282,17 +272,21 @@ export function BillRecapPage() {
               hangoutName={data.name}
               detail={detailFor(row.memberId)}
               isOverrideCollector={overrideReceiver?.id === row.memberId}
+              isOpen={expandedMemberId === row.memberId}
+              onToggle={() =>
+                setExpandedMemberId((cur) => (cur === row.memberId ? null : row.memberId))
+              }
             />
           ))}
         </div>
 
-        {/* Spendings (collapsible, smaller cards, cleaner layout) */}
+        {/* Spendings (collapsible continuous receipt ledger) */}
         {data.spends.length > 0 && (
           <div className="mt-8">
             <button
               type="button"
               onClick={() => setSpendsOpen((v) => !v)}
-              className="mb-2.5 flex w-full items-center justify-between px-1 py-1 rounded-xl text-left select-none group cursor-pointer"
+              className="mb-3 flex w-full items-center justify-between px-1 text-left select-none group cursor-pointer"
               aria-expanded={spendsOpen}
             >
               <div className="flex items-center gap-2">
@@ -303,7 +297,7 @@ export function BillRecapPage() {
                   {data.spends.length}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-muted group-hover:text-ink transition">
+              <div className="flex items-center gap-1 text-xs font-bold text-muted group-hover:text-ink transition">
                 <span>{spendsOpen ? 'Hide' : 'Show all'}</span>
                 <ChevronDown
                   size={15}
@@ -313,7 +307,7 @@ export function BillRecapPage() {
             </button>
 
             {spendsOpen && (
-              <div className="space-y-1.5">
+              <div className="overflow-hidden rounded-2xl border border-line/40 bg-surface/75 backdrop-blur-sm divide-y divide-line/25 shadow-xs">
                 {data.spends.map((s) => {
                   const meta = spendCategory(s.category)
                   const Icon = meta.icon
@@ -322,10 +316,10 @@ export function BillRecapPage() {
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center gap-2.5 rounded-xl border border-line/50 bg-surface px-3 py-2 sm:py-2.5 shadow-xs transition hover:border-line"
+                      className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-2/35"
                     >
-                      <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
-                        <Icon size={14} />
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-2/80 text-muted">
+                        <Icon size={13} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -334,8 +328,8 @@ export function BillRecapPage() {
                             {fmtMoney(Number(s.amount), cur)}
                           </span>
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-[11px] font-semibold text-muted">
-                          <span className="text-ink/75">{spender} paid</span>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-[11px] font-medium text-muted">
+                          <span className="font-semibold text-ink/75">{spender} paid</span>
                           <span>·</span>
                           <span className="inline-flex items-center gap-0.5">
                             <Users size={10} className="shrink-0 opacity-70" />
@@ -479,6 +473,8 @@ function PersonRow({
   hangoutName,
   detail,
   isOverrideCollector,
+  isOpen,
+  onToggle,
 }: {
   row: MemberRecap
   currency: string
@@ -489,8 +485,9 @@ function PersonRow({
   hangoutName: string
   detail: RowDetail
   isOverrideCollector?: boolean
+  isOpen: boolean
+  onToggle: () => void
 }) {
-  const [open, setOpen] = useState(false)
   const [viewingQr, setViewingQr] = useState<{
     qrUrl: string
     bankName: string
@@ -574,24 +571,41 @@ function PersonRow({
     : null
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line/60 bg-surface shadow-card">
-      {/* Header: clickable everywhere to expand/collapse */}
+    <div
+      className={cn(
+        'relative transition-all duration-200',
+        isOpen ? 'bg-surface-2/45 dark:bg-surface-2/35' : 'hover:bg-surface-2/20',
+      )}
+    >
+      {/* Accent left indicator line when expanded */}
+      {isOpen && (
+        <span
+          className="absolute inset-y-0 left-0 w-1 bg-primary rounded-r z-10"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Row Header: clean, interactive, and highlighted when active */}
       <div
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            setOpen((v) => !v)
+            onToggle()
           }
         }}
-        aria-expanded={open}
-        className="flex items-center gap-2.5 p-3.5 sm:p-4 cursor-pointer select-none"
+        aria-expanded={isOpen}
+        className={cn(
+          'flex items-center gap-3 p-3.5 sm:p-4 cursor-pointer select-none transition-colors',
+          isOpen && 'bg-surface-2/20',
+        )}
       >
         <span
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200',
+            isOpen && 'scale-105 shadow-sm ring-2 ring-primary/20',
             isOverrideCollector
               ? 'bg-primary-soft text-primary'
               : owes
@@ -612,7 +626,14 @@ function PersonRow({
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-black text-ink">{row.name}</p>
+          <p
+            className={cn(
+              'truncate text-base font-black transition-colors',
+              isOpen ? 'text-primary' : 'text-ink',
+            )}
+          >
+            {row.name}
+          </p>
           <p className={cn('text-xs font-black uppercase tracking-wider', tone)}>{label}</p>
         </div>
 
@@ -642,13 +663,21 @@ function PersonRow({
           )
         )}
 
-        <div className="shrink-0 rounded-lg p-1 text-muted transition hover:text-ink">
-          <ChevronDown size={18} className={cn('transition-transform duration-200', open && 'rotate-180')} />
+        <div
+          className={cn(
+            'shrink-0 rounded-lg p-1 transition-colors duration-200',
+            isOpen ? 'text-primary' : 'text-muted',
+          )}
+        >
+          <ChevronDown
+            size={18}
+            className={cn('transition-transform duration-200', isOpen && 'rotate-180')}
+          />
         </div>
       </div>
 
-      {open && (
-        <div className="space-y-3.5 border-t border-line/40 bg-surface-2/30 px-4 py-3.5">
+      {isOpen && (
+        <div className="space-y-3 border-t border-line/30 bg-surface-2/20 px-4 py-3.5">
           {/* Share breakdown — how the fair share is built from each spend */}
           {detail.breakdown.length > 0 && (
             <div>
@@ -664,8 +693,8 @@ function PersonRow({
             </div>
           )}
 
-          {/* The balance equation */}
-          <div className="rounded-xl border border-line/50 bg-surface px-3 py-2.5">
+          {/* The balance equation (borderless soft fill) */}
+          <div className="rounded-2xl bg-surface/70 p-3 space-y-1">
             <CalcLine label="Fair share" amount={row.share} currency={currency} />
             {row.paid > 0 && <CalcLine label="You paid" amount={row.paid} currency={currency} sign="−" />}
             {!detail.isHolder && detail.ownDeposit > 0 && (
@@ -684,7 +713,7 @@ function PersonRow({
           </div>
 
           {isOverrideCollector && (
-            <div className="rounded-xl border border-primary/30 bg-primary-soft/50 p-3 text-xs text-ink space-y-1">
+            <div className="rounded-2xl bg-primary-soft/60 p-3 text-xs text-ink space-y-1">
               <p className="font-black text-primary flex items-center gap-1.5">
                 <UserCheck size={14} /> Group Payment Collector
               </p>
@@ -716,7 +745,7 @@ function PersonRow({
                   : null
 
                 return (
-                  <div key={i} className="rounded-xl border border-line/60 bg-surface p-3 space-y-2.5">
+                  <div key={i} className="rounded-2xl bg-surface/85 p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-black text-ink">
                         <ArrowRight size={13} className="shrink-0 text-danger" />
@@ -731,7 +760,7 @@ function PersonRow({
                     </div>
 
                     {hasBank && qrUrl && (
-                      <div className="flex items-center gap-3 pt-2 border-t border-line/40">
+                      <div className="flex items-center gap-3 pt-2 border-t border-line/30">
                         <button
                           type="button"
                           onClick={() =>
@@ -747,16 +776,16 @@ function PersonRow({
                               receiverName: nameOf(s.toId, s.toName),
                             })
                           }
-                          className="group relative shrink-0 rounded-xl border border-line/60 bg-white p-1 shadow-xs hover:shadow-md transition cursor-pointer"
+                          className="group relative shrink-0 rounded-2xl border border-line/50 bg-white p-1.5 shadow-xs hover:shadow-md transition cursor-pointer"
                           title="Tap to zoom VietQR"
                         >
                           <img src={qrUrl} alt="VietQR" className="h-20 w-20 object-contain" />
-                          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px] text-[10px] font-black gap-1">
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px] text-[10px] font-black gap-1">
                             <QrCode size={12} /> Zoom
                           </span>
                         </button>
-                        <div className="min-w-0 flex-1 text-xs space-y-1">
-                          <div className="flex items-center gap-1">
+                        <div className="min-w-0 flex-1 text-xs space-y-1.5">
+                          <div className="flex items-center gap-1.5">
                             <span className="rounded bg-primary-soft text-primary font-black px-1.5 py-0.5 text-[10px] border border-primary/20">
                               {receiver?.bank_code}
                             </span>
@@ -764,7 +793,7 @@ function PersonRow({
                               {receiver?.bank_name || receiver?.bank_code}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between gap-1 rounded-md bg-surface-2/60 px-2 py-1 font-mono font-bold text-ink text-xs">
+                          <div className="flex items-center justify-between gap-1 rounded-xl bg-surface-2/50 px-2.5 py-1 font-mono font-bold text-ink text-xs">
                             <span className="truncate">{receiver?.bank_account_no}</span>
                             <CopyBtn value={receiver!.bank_account_no!} />
                           </div>
@@ -773,7 +802,7 @@ function PersonRow({
                               {receiver.bank_account_name}
                             </p>
                           )}
-                          <div className="flex items-center justify-between gap-1 rounded-md bg-surface-2/60 px-2 py-0.5 text-[11px] text-muted">
+                          <div className="flex items-center justify-between gap-1 rounded-xl bg-surface-2/50 px-2.5 py-1 text-[11px] text-muted">
                             <span className="truncate">Memo: {memo}</span>
                             <CopyBtn value={memo} />
                           </div>
@@ -788,7 +817,7 @@ function PersonRow({
           {gets && getsFrom.length > 1 && (
             <div className="space-y-1.5">
               {getsFrom.map((s, i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl bg-surface px-3 py-2">
+                <div key={i} className="flex items-center justify-between rounded-2xl bg-surface/80 px-3 py-2">
                   <span className="flex items-center gap-2 text-xs font-black text-ink">
                     <Avatar name={s.fromName} size="sm" className="!h-5 !w-5 !text-[9px] !ring-0" />
                     {nameOf(s.fromId, s.fromName)} pays you
