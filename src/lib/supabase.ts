@@ -20,6 +20,8 @@ export const supabase = createClient(
  */
 export async function billUrl(path: string, expiresInSeconds = 3600): Promise<string | null> {
   const { data, error } = await supabase.storage.from('bills').createSignedUrl(path, expiresInSeconds)
-  if (error) return null
+  if (error || !data?.signedUrl) {
+    return supabase.storage.from('bills').getPublicUrl(path).data.publicUrl
+  }
   return data.signedUrl
 }

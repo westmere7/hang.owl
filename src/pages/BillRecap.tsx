@@ -1,6 +1,7 @@
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, SearchX, Share2, Users } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, Receipt, SearchX, Share2, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { BillViewerModal } from '../components/hangout/BillViewerModal'
 import { Avatar, PageLoader, cn } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { spendCategory } from '../lib/categories'
@@ -24,6 +25,7 @@ interface BillSpend {
   amount: number
   spent_at: string
   spender_member_id: string
+  bill_path?: string | null
   shares: { member_id: string; weight: number }[]
 }
 interface BillData {
@@ -34,6 +36,7 @@ interface BillData {
   ends_on: string | null
   status: string
   deposit_holder_id: string | null
+  bill_paths?: string[] | null
   members: BillMember[]
   spends: BillSpend[]
 }
@@ -50,6 +53,8 @@ interface RowDetail {
 export function BillRecapPage() {
   const { code } = useParams<{ code: string }>()
   const { ready } = useApp()
+  const [viewingBill, setViewingBill] = useState(false)
+  const [billInitialIndex, setBillInitialIndex] = useState(0)
 
   const { data, loading } = useAsync(async () => {
     if (!code) return null
@@ -125,6 +130,20 @@ export function BillRecapPage() {
     heldDeposits,
   })
 
+  const billPaths = useMemo(() => {
+    if (!data) return []
+    const list: string[] = []
+    if (data.bill_paths) {
+      for (const p of data.bill_paths) {
+        if (p && !list.includes(p)) list.push(p)
+      }
+    }
+    for (const s of data.spends) {
+      if (s.bill_path && !list.includes(s.bill_path)) list.push(s.bill_path)
+    }
+    return list
+  }, [data])
+
   // Who pays first, then who's owed, then settled — most actionable on top.
   const rank = (r: MemberRecap) => (r.balance > 0.005 ? 0 : r.balance < -0.005 ? 1 : 2)
   const rows = [...recap.rows].sort((a, b) => rank(a) - rank(b) || Math.abs(b.balance) - Math.abs(a.balance))
@@ -138,7 +157,29 @@ export function BillRecapPage() {
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">
               {dateRange(data.starts_on, data.ends_on)}
             </p>
-            <ShareLinkButton />
+            <div className="flex items-center gap-2">
+              {billPaths.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBillInitialIndex(0)
+                    setViewingBill(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/90 px-3 py-1.5 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white active:scale-95 shadow-sm"
+                  title="View bill receipt"
+                  aria-label="View bill receipt"
+                >
+                  <Receipt size={14} />
+                  <span>View bill</span>
+                  {billPaths.length > 1 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-black text-on-primary px-1">
+                      {billPaths.length}
+                    </span>
+                  )}
+                </button>
+              )}
+              <ShareLinkButton />
+            </div>
           </div>
           <h1 className="mt-1.5 truncate text-base font-bold tracking-tight text-muted sm:text-lg">{data.name}</h1>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -197,6 +238,21 @@ export function BillRecapPage() {
                         <span>
                           {fmtDate(s.spent_at)} · {fmtTime(s.spent_at)}
                         </span>
+                        {s.bill_path && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const idx = billPaths.indexOf(s.bill_path!)
+                              setBillInitialIndex(idx >= 0 ? idx : 0)
+                              setViewingBill(true)
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary-soft/90 px-1.5 py-0.5 text-[10px] font-black text-primary hover:bg-primary hover:text-white transition cursor-pointer"
+                            title="View receipt photo"
+                          >
+                            <Receipt size={10} />
+                            <span>Receipt</span>
+                          </button>
+                        )}
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-black tabular-nums text-ink">
@@ -209,6 +265,14 @@ export function BillRecapPage() {
           </>
         )}
       </div>
+
+      <BillViewerModal
+        open={viewingBill}
+        onClose={() => setViewingBill(false)}
+        billPaths={billPaths}
+        initialIndex={billInitialIndex}
+        title={`${data.name} · Receipt`}
+      />
     </div>
   )
 }

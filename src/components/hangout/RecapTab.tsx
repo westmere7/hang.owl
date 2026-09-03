@@ -1,12 +1,13 @@
-import { Check, CheckCircle2, ChevronDown, Crown, ExternalLink, Minus, Pencil, PiggyBank, X } from 'lucide-react'
+import { Check, CheckCircle2, ChevronDown, Crown, ExternalLink, Eye, Minus, Pencil, PiggyBank, Plus, Receipt, Trash2, Upload, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { currencyDecimals, fmtMoney, formatCurrencyInput, parseCurrencyInput } from '../../lib/format'
 import { canEditRecap } from '../../lib/permissions'
 import { computeRecap, type MemberRecap, type Settlement } from '../../lib/split'
-import { supabase } from '../../lib/supabase'
-import type { Member } from '../../types'
+import { billUrl, supabase } from '../../lib/supabase'
+import type { Hangout, Member } from '../../types'
 import type { HangoutData } from '../../pages/Hangout'
-import { Avatar, Button, ErrorNote, Field, Input, Modal, Toggle, cn } from '../ui'
+import { Avatar, Button, ErrorNote, Field, Input, Modal, Spinner, Toggle, cn } from '../ui'
+import { BillViewerModal } from './BillViewerModal'
 
 function getSettlementKey(s: Settlement): string {
   // Keyed by the member pair only (not amount) so a "paid" mark survives when
@@ -238,6 +239,9 @@ export function RecapTab({ data }: { data: HangoutData }) {
           </a>
         </div>
       </div>
+
+      {/* Bill Receipts Upload & Preview Section */}
+      <BillSection hangout={hangout} canEdit={editable} onReload={reload} />
 
       {/* Payers & Receivers Unified Split Lists */}
       {payers.length === 0 && receivers.length === 0 ? (
@@ -740,6 +744,285 @@ function AdjustModal({
         <ErrorNote message={error} />
       </div>
     </Modal>
+  )
+}
+
+function BillSection({
+  hangout,
+  canEdit,
+  onReload,
+}: {
+  hangout: Hangout
+  canEdit: boolean
+  onReload: () => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [deletingPath, setDeletingPath] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null)
+
+  const billPaths = hangout.bill_paths ?? []
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setUploading(true)
+    setError(null)
+    try {
+      const newPaths: string[] = []
+      for (const file of Array.from(files)) {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const path = `${hangout.id}/${crypto.randomUUID()}.${ext}`
+        const { error: upErr } = await supabase.storage.from('bills').upload(path, file)
+        if (upErr) throw upErr
+        newPaths.push(path)
+      }
+
+      const nextPaths = [...billPaths, ...newPaths]
+      const { error: rpcErr } = await supabase.rpc('update_hangout_bills', {
+        p_hangout: hangout.id,
+        p_bill_paths: nextPaths,
+      })
+      if (rpcErr) {
+        const { error: upErr } = await supabase
+          .from('hangouts')
+          .update({ bill_paths: nextPaths })
+          .eq('id', hangout.id)
+        if (upErr) throw upErr
+      }
+
+      onReload()
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to upload bill photo')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  async function handleDelete(pathToDelete: string) {
+    if (!window.confirm('Delete this bill photo?')) return
+    setDeletingPath(pathToDelete)
+    setError(null)
+    try {
+      await supabase.storage.from('bills').remove([pathToDelete])
+      const nextPaths = billPaths.filter((p) => p !== pathToDelete)
+      const { error: rpcErr } = await supabase.rpc('update_hangout_bills', {
+        p_hangout: hangout.id,
+        p_bill_paths: nextPaths,
+      })
+      if (rpcErr) {
+        const { error: upErr } = await supabase
+          .from('hangouts')
+          .update({ bill_paths: nextPaths })
+          .eq('id', hangout.id)
+        if (upErr) throw upErr
+      }
+      onReload()
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to delete bill photo')
+    } finally {
+      setDeletingPath(null)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl sm:rounded-3xl border border-line/60 bg-surface p-5 sm:p-6 shadow-card space-y-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-soft text-primary shadow-sm">
+            <Receipt size={18} />
+          </span>
+          <div>
+            <h3 className="text-sm sm:text-base font-black text-ink">Bill Receipts</h3>
+            <p className="text-[11px] font-semibold text-muted">
+              {billPaths.length === 0
+                ? 'Attach receipt photos so everyone can verify the total on the payment page'
+                : `${billPaths.length} receipt photo${billPaths.length > 1 ? 's' : ''} uploaded`}
+            </p>
+          </div>
+        </div>
+
+        {canEdit && billPaths.length > 0 && (
+          <label className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/80 px-3.5 py-1.5 text-xs font-black text-primary hover:bg-primary hover:text-white transition cursor-pointer shadow-sm shrink-0">
+            {uploading ? (
+              <Spinner className="h-3.5 w-3.5" />
+            ) : (
+              <>
+                <Plus size={14} strokeWidth={2.5} />
+                <span>Add photo</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploading}
+              onChange={handleFiles}
+              className="hidden"
+            />
+          </label>
+        )}
+      </div>
+
+      <ErrorNote message={error} />
+
+      {billPaths.length === 0 ? (
+        canEdit ? (
+          <label className="flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-line/80 bg-surface-2/40 p-6 text-center cursor-pointer hover:border-primary/60 hover:bg-surface-2/70 transition group">
+            {uploading ? (
+              <div className="flex flex-col items-center gap-2 py-2 text-muted">
+                <Spinner className="h-7 w-7 text-primary" />
+                <span className="text-xs font-bold">Uploading receipt photo...</span>
+              </div>
+            ) : (
+              <>
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary group-hover:scale-110 transition shadow-sm">
+                  <Upload size={22} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-ink">Upload bill receipt</p>
+                  <p className="text-xs font-semibold text-muted mt-0.5">
+                    Click to select one or more photos (JPG, PNG, WebP)
+                  </p>
+                </div>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploading}
+              onChange={handleFiles}
+              className="hidden"
+            />
+          </label>
+        ) : (
+          <p className="text-xs font-semibold text-muted text-center py-4 bg-surface-2/30 rounded-2xl">
+            No bill receipts have been uploaded for this hangout yet.
+          </p>
+        )
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+          {billPaths.map((path, idx) => (
+            <BillThumbnail
+              key={path}
+              path={path}
+              index={idx}
+              onView={() => setViewingIndex(idx)}
+              onDelete={() => handleDelete(path)}
+              canEdit={canEdit}
+              deleting={deletingPath === path}
+            />
+          ))}
+
+          {canEdit && (
+            <label className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-line/80 bg-surface-2/30 aspect-[4/3] cursor-pointer hover:border-primary/60 hover:bg-surface-2/60 transition group">
+              {uploading ? (
+                <Spinner className="h-5 w-5 text-primary" />
+              ) : (
+                <>
+                  <Plus size={20} className="text-muted group-hover:text-primary transition" />
+                  <span className="text-[11px] font-black text-muted group-hover:text-ink transition">
+                    Add photo
+                  </span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploading}
+                onChange={handleFiles}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+      )}
+
+      {viewingIndex !== null && (
+        <BillViewerModal
+          open={viewingIndex !== null}
+          onClose={() => setViewingIndex(null)}
+          billPaths={billPaths}
+          initialIndex={viewingIndex}
+          title={`${hangout.name} · Receipt`}
+        />
+      )}
+    </div>
+  )
+}
+
+function BillThumbnail({
+  path,
+  index,
+  onView,
+  onDelete,
+  canEdit,
+  deleting,
+}: {
+  path: string
+  index: number
+  onView: () => void
+  onDelete: () => void
+  canEdit: boolean
+  deleting: boolean
+}) {
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void billUrl(path).then((u) => {
+      if (active && u) setUrl(u)
+    })
+    return () => {
+      active = false
+    }
+  }, [path])
+
+  return (
+    <div
+      onClick={onView}
+      className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-line/60 bg-surface-2 cursor-pointer shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
+    >
+      {url ? (
+        <img src={url} alt={`Bill receipt ${index + 1}`} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <Spinner className="h-5 w-5 text-primary" />
+        </div>
+      )}
+
+      {/* Index badge */}
+      <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/60 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-black text-white">
+        #{index + 1}
+      </span>
+
+      {/* Hover preview indicator */}
+      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <span className="flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-xs font-black text-white backdrop-blur-sm shadow-sm">
+          <Eye size={13} /> View
+        </span>
+      </div>
+
+      {/* Delete button */}
+      {canEdit && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          disabled={deleting}
+          className="absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/90 hover:bg-danger hover:text-white backdrop-blur-sm transition active:scale-90 shadow-md"
+          title="Delete receipt"
+          aria-label="Delete receipt"
+        >
+          {deleting ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 size={13} />}
+        </button>
+      )}
+    </div>
   )
 }
 

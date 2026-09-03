@@ -44,6 +44,7 @@ export interface Hangout {
   guest_can_add_bookmark: boolean
   guest_can_edit_recap: boolean
   created_at: string
+  bill_paths?: string[] | null
 }
 
 export interface Member {
