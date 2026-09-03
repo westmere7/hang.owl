@@ -162,11 +162,11 @@ export function BillRecapPage() {
                     setViewingBill(true)
                   }}
                   className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft/90 px-3 py-1.5 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white active:scale-95 shadow-sm"
-                  title="View bill receipt"
-                  aria-label="View bill receipt"
+                  title="View actual bills"
+                  aria-label="View actual bills"
                 >
                   <Receipt size={14} />
-                  <span>View bill</span>
+                  <span>View actual bills</span>
                   {billPaths.length > 1 && (
                     <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-black text-on-primary px-1">
                       {billPaths.length}

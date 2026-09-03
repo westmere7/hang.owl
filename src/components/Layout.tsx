@@ -36,9 +36,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const elasticRef = useElasticScroll<HTMLElement>()
 
   return (
-    <div className="min-h-dvh md:flex bg-bg overflow-x-hidden">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col justify-between border-r border-line/60 bg-surface/80 px-4 py-6 backdrop-blur-md md:flex">
+    <div className="min-h-dvh md:flex bg-bg overflow-x-hidden md:overflow-x-visible">
+      {/* Desktop sidebar - fixed so it stays stationary when content scrolls */}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden h-dvh w-64 flex-col justify-between border-r border-line/60 bg-surface/80 px-4 py-6 backdrop-blur-md md:flex">
         <div className="space-y-8">
           <div className="px-2">
             <Wordmark />
@@ -68,6 +68,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <Settings size={16} className="text-muted" />
         </button>
       </aside>
+
+      {/* Spacer to offset fixed desktop sidebar */}
+      <div className="hidden md:block w-64 shrink-0" aria-hidden="true" />
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line/60 bg-surface/85 px-4 py-3 backdrop-blur-xl md:hidden">

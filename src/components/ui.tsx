@@ -221,22 +221,25 @@ export function Segmented<T extends string>({
   options: { value: T; label: ReactNode }[]
 }) {
   return (
-    <div className="flex rounded-2xl bg-surface-2/90 p-1 border border-line/50">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={cn(
-            'flex-1 rounded-xl py-2 px-3 text-xs sm:text-sm font-extrabold transition-all duration-150',
-            value === o.value
-              ? 'bg-surface text-primary shadow-sm border border-line/40'
-              : 'text-muted hover:text-ink',
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
+    <div className="flex rounded-2xl bg-surface-2/90 p-1 border border-line/50 select-none">
+      {options.map((o) => {
+        const isActive = value === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            className={cn(
+              'flex-1 rounded-xl py-2 px-3 text-xs sm:text-sm font-extrabold outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 border transition-colors duration-150',
+              isActive
+                ? 'bg-surface text-primary shadow-sm border-line/40'
+                : 'text-muted hover:text-ink border-transparent',
+            )}
+          >
+            {o.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
