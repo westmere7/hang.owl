@@ -62,6 +62,7 @@ export function BillRecapPage() {
   const { ready } = useApp()
   const [viewingBill, setViewingBill] = useState(false)
   const [billInitialIndex, setBillInitialIndex] = useState(0)
+  const [spendsOpen, setSpendsOpen] = useState(true)
 
   const { data, loading } = useAsync(async () => {
     if (!code) return null
@@ -215,17 +216,6 @@ export function BillRecapPage() {
           <p className="mt-0.5 text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
         </div>
 
-        {overrideReceiver && (
-          <div className="mb-3 flex items-center gap-2.5 rounded-2xl border border-primary/30 bg-primary-soft/50 p-3.5 text-xs text-ink shadow-xs">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-              <UserCheck size={15} />
-            </span>
-            <p className="font-semibold">
-              Payment receiver override: All transfers go to <strong>{overrideReceiver.display_name}</strong>, who will collect on behalf of the group.
-            </p>
-          </div>
-        )}
-
         <div className="space-y-2.5">
           {rows.map((row) => (
             <PersonRow
@@ -243,58 +233,92 @@ export function BillRecapPage() {
           ))}
         </div>
 
-        {/* Spendings */}
+        {/* Spendings (collapsible, smaller cards, cleaner layout) */}
         {data.spends.length > 0 && (
-          <>
-            <h2 className="mb-2 mt-8 px-0.5 text-xs font-black uppercase tracking-wider text-muted">
-              Spendings ({data.spends.length})
-            </h2>
-            <div className="space-y-1.5">
-              {data.spends.map((s) => {
-                const meta = spendCategory(s.category)
-                const Icon = meta.icon
-                const joined = s.shares.filter((sh) => Number(sh.weight) > 0).length
-                return (
-                  <div key={s.id} className="flex items-center gap-3 rounded-2xl border border-line/60 bg-surface p-3 shadow-card">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                      <Icon size={17} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-extrabold text-ink">{s.title}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold text-muted">
-                        <span>{memberName.get(s.spender_member_id) ?? 'Someone'} paid</span>
-                        <span className="inline-flex items-center gap-1">
-                          <Users size={11} />
-                          {joined} sharing
-                        </span>
-                        <span>
-                          {fmtDate(s.spent_at)} · {fmtTime(s.spent_at)}
-                        </span>
-                        {s.bill_path && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const idx = billPaths.indexOf(s.bill_path!)
-                              setBillInitialIndex(idx >= 0 ? idx : 0)
-                              setViewingBill(true)
-                            }}
-                            className="inline-flex items-center gap-1 rounded-md bg-primary-soft/90 px-1.5 py-0.5 text-[10px] font-black text-primary hover:bg-primary hover:text-white transition cursor-pointer"
-                            title="View receipt photo"
-                          >
-                            <Receipt size={10} />
-                            <span>Receipt</span>
-                          </button>
-                        )}
-                      </p>
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => setSpendsOpen((v) => !v)}
+              className="mb-2.5 flex w-full items-center justify-between px-1 py-1 rounded-xl text-left select-none group cursor-pointer"
+              aria-expanded={spendsOpen}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-muted group-hover:text-ink transition">
+                  Spendings
+                </span>
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-black text-muted border border-line/50">
+                  {data.spends.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-muted group-hover:text-ink transition">
+                <span>{spendsOpen ? 'Hide' : 'Show all'}</span>
+                <ChevronDown
+                  size={15}
+                  className={cn('transition-transform duration-200', spendsOpen && 'rotate-180')}
+                />
+              </div>
+            </button>
+
+            {spendsOpen && (
+              <div className="space-y-1.5">
+                {data.spends.map((s) => {
+                  const meta = spendCategory(s.category)
+                  const Icon = meta.icon
+                  const joined = s.shares.filter((sh) => Number(sh.weight) > 0).length
+                  const spender = memberName.get(s.spender_member_id) ?? 'Someone'
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2.5 rounded-xl border border-line/50 bg-surface px-3 py-2 sm:py-2.5 shadow-xs transition hover:border-line"
+                    >
+                      <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
+                        <Icon size={14} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-xs sm:text-sm font-bold text-ink">{s.title}</p>
+                          <span className="shrink-0 text-xs sm:text-sm font-black tabular-nums text-ink">
+                            {fmtMoney(Number(s.amount), cur)}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-[11px] font-semibold text-muted">
+                          <span className="text-ink/75">{spender} paid</span>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-0.5">
+                            <Users size={10} className="shrink-0 opacity-70" />
+                            <span>{joined} sharing</span>
+                          </span>
+                          <span>·</span>
+                          <span>
+                            {fmtDate(s.spent_at)} · {fmtTime(s.spent_at)}
+                          </span>
+                          {s.bill_path && (
+                            <>
+                              <span>·</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const idx = billPaths.indexOf(s.bill_path!)
+                                  setBillInitialIndex(idx >= 0 ? idx : 0)
+                                  setViewingBill(true)
+                                }}
+                                className="inline-flex items-center gap-1 rounded bg-primary-soft px-1.5 py-0.2 text-[10px] font-black text-primary hover:bg-primary hover:text-white transition cursor-pointer"
+                                title="View receipt photo"
+                              >
+                                <Receipt size={9} />
+                                <span>Receipt</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <span className="shrink-0 text-sm font-black tabular-nums text-ink">
-                      {fmtMoney(Number(s.amount), cur)}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -441,7 +465,7 @@ function PersonRow({
 
   const nameOf = (id: string, fallback: string) => memberName.get(id) ?? fallback
   const label = isOverrideCollector
-    ? 'Collecting for group'
+    ? 'Group collector'
     : owes
       ? pays.length === 1
         ? `Pays ${nameOf(pays[0].toId, pays[0].toName)}`
@@ -454,45 +478,120 @@ function PersonRow({
           : 'Gets back'
         : 'All settled'
 
+  // Build target QR data for header QR button
+  const firstTransfer = pays[0]
+  const targetReceiver = firstTransfer
+    ? members.find((m) => m.id === firstTransfer.toId)
+    : isOverrideCollector
+      ? members.find((m) => m.id === row.memberId)
+      : gets
+        ? members.find((m) => m.id === row.memberId)
+        : null
+
+  const targetAmount = firstTransfer ? firstTransfer.amount : Math.abs(row.balance)
+  const targetMemo = formatTransferMemo(hangoutName, row.name)
+  const targetReceiverName = firstTransfer
+    ? nameOf(firstTransfer.toId, firstTransfer.toName)
+    : row.name
+
+  const hasBank = Boolean(targetReceiver?.bank_code && targetReceiver?.bank_account_no)
+  const qrUrl = hasBank
+    ? buildVietQRUrl({
+        bankCode: targetReceiver!.bank_code!,
+        accountNo: targetReceiver!.bank_account_no!,
+        accountName: targetReceiver!.bank_account_name,
+        amount: currency === 'VND' ? Math.round(targetAmount) : null,
+        memo: targetMemo,
+        template: 'compact2',
+      })
+    : null
+
+  const qrData = hasBank && qrUrl
+    ? {
+        qrUrl,
+        bankName: targetReceiver?.bank_name || targetReceiver?.bank_code || '',
+        bankCode: targetReceiver?.bank_code || '',
+        accountNo: targetReceiver?.bank_account_no || '',
+        accountName: targetReceiver?.bank_account_name,
+        amount: targetAmount,
+        currency,
+        memo: targetMemo,
+        receiverName: targetReceiverName,
+      }
+    : null
+
   return (
     <div className="overflow-hidden rounded-2xl border border-line/60 bg-surface shadow-card">
-      {/* Header: left toggles, amount + copy + chevron on the right */}
-      <div className="flex items-center gap-2.5 p-3.5 sm:p-4">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
-          aria-expanded={open}
+      {/* Header: clickable everywhere to expand/collapse */}
+      <div
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen((v) => !v)
+          }
+        }}
+        aria-expanded={open}
+        className="flex items-center gap-2.5 p-3.5 sm:p-4 cursor-pointer select-none"
+      >
+        <span
+          className={cn(
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+            isOverrideCollector
+              ? 'bg-primary-soft text-primary'
+              : owes
+                ? 'bg-danger-soft text-danger'
+                : gets
+                  ? 'bg-success-soft text-success'
+                  : 'bg-surface-2 text-muted',
+          )}
         >
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
-              owes ? 'bg-danger-soft text-danger' : gets ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
-            )}
-          >
-            {owes ? (
-              <ArrowUpRight size={20} strokeWidth={2.75} />
-            ) : gets ? (
-              <ArrowDownLeft size={20} strokeWidth={2.75} />
-            ) : (
-              <Check size={18} strokeWidth={2.75} />
-            )}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-black text-ink">{row.name}</p>
-            <p className={cn('text-xs font-black uppercase tracking-wider', tone)}>{label}</p>
-          </div>
-        </button>
+          {isOverrideCollector ? (
+            <UserCheck size={20} strokeWidth={2.75} />
+          ) : owes ? (
+            <ArrowUpRight size={20} strokeWidth={2.75} />
+          ) : gets ? (
+            <ArrowDownLeft size={20} strokeWidth={2.75} />
+          ) : (
+            <Check size={18} strokeWidth={2.75} />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-black text-ink">{row.name}</p>
+          <p className={cn('text-xs font-black uppercase tracking-wider', tone)}>{label}</p>
+        </div>
+
         <span className={cn('shrink-0 text-xl font-black tabular-nums', tone)}>
           {owes || gets ? fmtMoney(Math.abs(row.balance), currency) : '—'}
         </span>
-        {(owes || gets) && <CopyBtn value={plainAmount} />}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Collapse' : 'Expand'}
-          className="shrink-0 rounded-lg p-1 text-muted transition hover:text-ink"
-        >
-          <ChevronDown size={18} className={cn('transition-transform', open && 'rotate-180')} />
-        </button>
+
+        {/* QR Button (or Copy button if no QR) */}
+        {qrData ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setViewingQr(qrData)
+            }}
+            aria-label="View QR code"
+            title="Scan VietQR"
+            className="shrink-0 rounded-xl border border-line/60 bg-surface-2/80 p-2 text-primary hover:bg-primary hover:text-white transition active:scale-90 shadow-xs"
+          >
+            <QrCode size={16} />
+          </button>
+        ) : (
+          (owes || gets) && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <CopyBtn value={plainAmount} />
+            </div>
+          )
+        )}
+
+        <div className="shrink-0 rounded-lg p-1 text-muted transition hover:text-ink">
+          <ChevronDown size={18} className={cn('transition-transform duration-200', open && 'rotate-180')} />
+        </div>
       </div>
 
       {open && (

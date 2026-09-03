@@ -56,7 +56,7 @@ export function VietQRModal({
             className="w-full max-w-[320px] rounded-xl shadow-md bg-white p-2 object-contain"
           />
           <p className="mt-2 text-center text-xs font-semibold text-muted">
-            Scan with any Vietnamese banking app (VCB, Techcombank, MB, Momo, etc.)
+            Please notify once transferred
           </p>
         </div>
 

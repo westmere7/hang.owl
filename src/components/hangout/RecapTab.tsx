@@ -626,7 +626,7 @@ function PersonCard({
             </div>
             <span className={cn('text-[11px] font-black uppercase tracking-wider', isOverrideCollector ? 'text-primary' : tone)}>
               {isOverrideCollector
-                ? 'Collecting for group'
+                ? 'Group collector'
                 : isAllSettled
                   ? 'Settled'
                   : isPartialSettled
