@@ -38,6 +38,7 @@ export interface Hangout {
   status: 'active' | 'ended'
   admin_id: string
   deposit_holder_id: string | null
+  payment_receiver_id?: string | null
   spending_cap?: number | null
   guest_can_add_spend: boolean
   guest_can_edit_spend: boolean
@@ -57,6 +58,22 @@ export interface Member {
   share_override: number | null
   is_admin: boolean
   joined_at: string
+  bank_code?: string | null
+  bank_name?: string | null
+  bank_account_no?: string | null
+  bank_account_name?: string | null
+}
+
+export interface SavedBankAccount {
+  id: string
+  user_id: string
+  name: string
+  bank_code: string
+  bank_name: string
+  account_no: string
+  account_name: string
+  created_at: string
+  updated_at: string
 }
 
 /** Bookmark inside a hangout (To visit / To eat / To drink / To do). */

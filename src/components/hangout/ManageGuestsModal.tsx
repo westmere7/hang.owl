@@ -1,7 +1,8 @@
 import { Check, Clock, Crown, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import type { Member } from '../../types'
+import { useSavedBankAccounts } from '../../lib/useSavedBankAccounts'
+import type { Member, SavedBankAccount } from '../../types'
 import { Avatar, Button, ErrorNote, Input, Modal, cn } from '../ui'
 
 interface Props {
@@ -15,21 +16,32 @@ interface Props {
 /**
  * Admin roster management: add guests, rename anyone, remove people.
  * Unclaimed guests show "Not joined" until they scan the QR / open the link.
+ * Allows adding guests from saved bank accounts.
  */
 export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }: Props) {
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { accounts } = useSavedBankAccounts()
 
-  async function addGuest() {
-    const name = newName.trim()
+  async function addGuest(displayName?: string, bankInfo?: Partial<SavedBankAccount>) {
+    const name = (displayName ?? newName).trim()
     if (!name) return
     setBusy(true)
     setError(null)
     try {
-      const { error } = await supabase
-        .from('hangout_members')
-        .insert({ hangout_id: hangoutId, display_name: name })
+      const payload: Record<string, any> = {
+        hangout_id: hangoutId,
+        display_name: name,
+      }
+      if (bankInfo) {
+        payload.bank_code = bankInfo.bank_code
+        payload.bank_name = bankInfo.bank_name
+        payload.bank_account_no = bankInfo.account_no
+        payload.bank_account_name = bankInfo.account_name
+      }
+
+      const { error } = await supabase.from('hangout_members').insert(payload)
       if (error) throw error
       setNewName('')
       reload()
@@ -38,6 +50,10 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
     } finally {
       setBusy(false)
     }
+  }
+
+  async function addFromAccount(acc: SavedBankAccount) {
+    await addGuest(acc.name, acc)
   }
 
   async function rename(member: Member, name: string) {
@@ -82,6 +98,14 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
                 disabled={m.is_admin}
                 onBlur={(e) => void rename(m, e.target.value)}
               />
+              {m.bank_code && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-soft/80 border border-primary/30 px-2 py-0.5 text-[10px] font-black text-primary"
+                  title={`${m.bank_name || m.bank_code} · ${m.bank_account_no}`}
+                >
+                  {m.bank_code}
+                </span>
+              )}
               <span
                 className={cn(
                   'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
@@ -133,6 +157,37 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
             <Plus size={18} />
           </Button>
         </div>
+
+        {accounts.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[11px] font-bold text-muted">Quick add from saved bank accounts:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {accounts.map((acc) => {
+                const alreadyAdded = members.some(
+                  (m) => m.display_name.toLowerCase() === acc.name.toLowerCase(),
+                )
+                return (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    disabled={busy || alreadyAdded}
+                    onClick={() => void addFromAccount(acc)}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-black transition active:scale-95',
+                      alreadyAdded
+                        ? 'border-line/40 bg-surface-2/40 text-muted/60 opacity-60 cursor-not-allowed'
+                        : 'border-primary/40 bg-primary-soft text-primary hover:bg-primary hover:text-white cursor-pointer shadow-sm',
+                    )}
+                  >
+                    <Plus size={12} strokeWidth={2.5} />
+                    <span>{acc.name}</span>
+                    <span className="text-[10px] opacity-80">({acc.bank_code})</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <ErrorNote message={error} />
       </div>

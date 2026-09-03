@@ -1,7 +1,8 @@
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, Receipt, SearchX, Share2, Users } from 'lucide-react'
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, QrCode, Receipt, SearchX, Share2, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { BillViewerModal } from '../components/hangout/BillViewerModal'
+import { VietQRModal } from '../components/VietQRModal'
 import { Avatar, PageLoader, cn } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { spendCategory } from '../lib/categories'
@@ -9,6 +10,7 @@ import { currencyDecimals, dateRange, fmtDate, fmtMoney, fmtTime } from '../lib/
 import { computeRecap, type MemberRecap, type Settlement } from '../lib/split'
 import { supabase } from '../lib/supabase'
 import { useAsync } from '../lib/useAsync'
+import { buildVietQRUrl, formatTransferMemo } from '../lib/vietqr'
 import type { SpendCategory } from '../types'
 
 interface BillMember {
@@ -17,6 +19,10 @@ interface BillMember {
   deposit: number
   share_override: number | null
   is_admin: boolean
+  bank_code?: string | null
+  bank_name?: string | null
+  bank_account_no?: string | null
+  bank_account_name?: string | null
 }
 interface BillSpend {
   id: string
@@ -36,6 +42,7 @@ interface BillData {
   ends_on: string | null
   status: string
   deposit_holder_id: string | null
+  payment_receiver_id?: string | null
   bill_paths?: string[] | null
   members: BillMember[]
   spends: BillSpend[]
@@ -140,6 +147,20 @@ export function BillRecapPage() {
     if (s.bill_path && !billPaths.includes(s.bill_path)) billPaths.push(s.bill_path)
   }
 
+  const overrideReceiver = data.members.find((m) => m.id === data.payment_receiver_id)
+
+  const activeSettlements: Settlement[] = !overrideReceiver
+    ? recap.settlements
+    : recap.rows
+        .filter((r) => r.balance > 0.005 && r.memberId !== overrideReceiver.id)
+        .map((p) => ({
+          fromId: p.memberId,
+          fromName: p.name,
+          toId: overrideReceiver.id,
+          toName: overrideReceiver.display_name,
+          amount: p.balance,
+        }))
+
   // Who pays first, then who's owed, then settled — most actionable on top.
   const rank = (r: MemberRecap) => (r.balance > 0.005 ? 0 : r.balance < -0.005 ? 1 : 2)
   const rows = [...recap.rows].sort((a, b) => rank(a) - rank(b) || Math.abs(b.balance) - Math.abs(a.balance))
@@ -193,6 +214,18 @@ export function BillRecapPage() {
           <h2 className="text-2xl font-black tracking-tight text-ink">Who pays what</h2>
           <p className="mt-0.5 text-xs font-semibold text-muted">Tap a name to see how it adds up.</p>
         </div>
+
+        {overrideReceiver && (
+          <div className="mb-3 flex items-center gap-2.5 rounded-2xl border border-primary/30 bg-primary-soft/50 p-3.5 text-xs text-ink shadow-xs">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+              <UserCheck size={15} />
+            </span>
+            <p className="font-semibold">
+              Payment receiver override: All transfers go to <strong>{overrideReceiver.display_name}</strong>, who will collect on behalf of the group.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2.5">
           {rows.map((row) => (
             <PersonRow
@@ -200,9 +233,12 @@ export function BillRecapPage() {
               row={row}
               currency={cur}
               decimals={decimals}
-              settlements={recap.settlements}
+              settlements={activeSettlements}
               memberName={memberName}
+              members={data.members}
+              hangoutName={data.name}
               detail={detailFor(row.memberId)}
+              isOverrideCollector={overrideReceiver?.id === row.memberId}
             />
           ))}
         </div>
@@ -362,35 +398,61 @@ function PersonRow({
   decimals,
   settlements,
   memberName,
+  members,
+  hangoutName,
   detail,
+  isOverrideCollector,
 }: {
   row: MemberRecap
   currency: string
   decimals: number
   settlements: Settlement[]
   memberName: Map<string, string>
+  members: BillMember[]
+  hangoutName: string
   detail: RowDetail
+  isOverrideCollector?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [viewingQr, setViewingQr] = useState<{
+    qrUrl: string
+    bankName: string
+    bankCode: string
+    accountNo: string
+    accountName?: string | null
+    amount: number
+    currency: string
+    memo: string
+    receiverName: string
+  } | null>(null)
+
   const owes = row.balance > 0.005
   const gets = row.balance < -0.005
-  const tone = owes ? 'text-danger' : gets ? 'text-success' : 'text-muted'
+  const tone = isOverrideCollector
+    ? 'text-primary'
+    : owes
+      ? 'text-danger'
+      : gets
+        ? 'text-success'
+        : 'text-muted'
   const pays = settlements.filter((s) => s.fromId === row.memberId)
   const getsFrom = settlements.filter((s) => s.toId === row.memberId)
   const plainAmount = Math.abs(row.balance).toFixed(decimals)
 
   const nameOf = (id: string, fallback: string) => memberName.get(id) ?? fallback
-  const label = owes
-    ? pays.length === 1
-      ? `Pays ${nameOf(pays[0].toId, pays[0].toName)}`
-      : pays.length > 1
-        ? `Pays ${nameOf(pays[0].toId, pays[0].toName)} +${pays.length - 1}`
-        : 'Pays'
-    : gets
-      ? getsFrom.length === 1
-        ? `Gets from ${nameOf(getsFrom[0].fromId, getsFrom[0].fromName)}`
-        : 'Gets back'
-      : 'All settled'
+  const label = isOverrideCollector
+    ? 'Collecting for group'
+    : owes
+      ? pays.length === 1
+        ? `Pays ${nameOf(pays[0].toId, pays[0].toName)}`
+        : pays.length > 1
+          ? `Pays ${nameOf(pays[0].toId, pays[0].toName)} +${pays.length - 1}`
+          : 'Pays'
+      : gets
+        ? getsFrom.length === 1
+          ? `Gets from ${nameOf(getsFrom[0].fromId, getsFrom[0].fromName)}`
+          : 'Gets back'
+        : 'All settled'
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line/60 bg-surface shadow-card">
@@ -469,22 +531,106 @@ function PersonRow({
             />
           </div>
 
-          {/* Who to pay — only when split across multiple people (otherwise it
-              just repeats the header + "You pay" total). */}
-          {owes && pays.length > 1 && (
-            <div className="space-y-1.5">
-              {pays.map((s, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2">
-                  <span className="flex min-w-0 flex-1 items-center gap-1.5 text-xs font-black text-ink">
-                    <ArrowRight size={13} className="shrink-0 text-danger" />
-                    <span className="truncate">Pay {nameOf(s.toId, s.toName)}</span>
-                  </span>
-                  <span className="shrink-0 text-xs font-black tabular-nums text-danger">
-                    {fmtMoney(s.amount, currency)}
-                  </span>
-                  <CopyBtn value={s.amount.toFixed(decimals)} />
-                </div>
-              ))}
+          {isOverrideCollector && (
+            <div className="rounded-xl border border-primary/30 bg-primary-soft/50 p-3 text-xs text-ink space-y-1">
+              <p className="font-black text-primary flex items-center gap-1.5">
+                <UserCheck size={14} /> Group Payment Collector
+              </p>
+              <p className="font-semibold text-muted">
+                Designated to collect all payments on behalf of the group and settle directly with the bill payer.
+              </p>
+            </div>
+          )}
+
+          {/* Who to pay — with payment info and VietQR */}
+          {!isOverrideCollector && owes && pays.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-black uppercase tracking-wider text-muted">
+                {pays.length === 1 ? 'Payment details' : 'Who to pay'}
+              </p>
+              {pays.map((s, i) => {
+                const receiver = members.find((m) => m.id === s.toId)
+                const memo = formatTransferMemo(hangoutName, row.name)
+                const hasBank = Boolean(receiver?.bank_code && receiver?.bank_account_no)
+                const qrUrl = hasBank
+                  ? buildVietQRUrl({
+                      bankCode: receiver!.bank_code!,
+                      accountNo: receiver!.bank_account_no!,
+                      accountName: receiver!.bank_account_name,
+                      amount: currency === 'VND' ? Math.round(s.amount) : null,
+                      memo,
+                      template: 'compact2',
+                    })
+                  : null
+
+                return (
+                  <div key={i} className="rounded-xl border border-line/60 bg-surface p-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-black text-ink">
+                        <ArrowRight size={13} className="shrink-0 text-danger" />
+                        <span>Pay {nameOf(s.toId, s.toName)}</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black tabular-nums text-danger">
+                          {fmtMoney(s.amount, currency)}
+                        </span>
+                        <CopyBtn value={s.amount.toFixed(decimals)} />
+                      </div>
+                    </div>
+
+                    {hasBank && qrUrl && (
+                      <div className="flex items-center gap-3 pt-2 border-t border-line/40">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setViewingQr({
+                              qrUrl,
+                              bankName: receiver?.bank_name || receiver?.bank_code || '',
+                              bankCode: receiver?.bank_code || '',
+                              accountNo: receiver?.bank_account_no || '',
+                              accountName: receiver?.bank_account_name,
+                              amount: s.amount,
+                              currency,
+                              memo,
+                              receiverName: nameOf(s.toId, s.toName),
+                            })
+                          }
+                          className="group relative shrink-0 rounded-xl border border-line/60 bg-white p-1 shadow-xs hover:shadow-md transition cursor-pointer"
+                          title="Tap to zoom VietQR"
+                        >
+                          <img src={qrUrl} alt="VietQR" className="h-20 w-20 object-contain" />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px] text-[10px] font-black gap-1">
+                            <QrCode size={12} /> Zoom
+                          </span>
+                        </button>
+                        <div className="min-w-0 flex-1 text-xs space-y-1">
+                          <div className="flex items-center gap-1">
+                            <span className="rounded bg-primary-soft text-primary font-black px-1.5 py-0.5 text-[10px] border border-primary/20">
+                              {receiver?.bank_code}
+                            </span>
+                            <span className="font-extrabold text-ink truncate">
+                              {receiver?.bank_name || receiver?.bank_code}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-1 rounded-md bg-surface-2/60 px-2 py-1 font-mono font-bold text-ink text-xs">
+                            <span className="truncate">{receiver?.bank_account_no}</span>
+                            <CopyBtn value={receiver!.bank_account_no!} />
+                          </div>
+                          {receiver?.bank_account_name && (
+                            <p className="text-[10px] uppercase font-bold text-muted truncate px-0.5">
+                              {receiver.bank_account_name}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between gap-1 rounded-md bg-surface-2/60 px-2 py-0.5 text-[11px] text-muted">
+                            <span className="truncate">Memo: {memo}</span>
+                            <CopyBtn value={memo} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
           {gets && getsFrom.length > 1 && (
@@ -501,6 +647,22 @@ function PersonRow({
             </div>
           )}
         </div>
+      )}
+
+      {viewingQr && (
+        <VietQRModal
+          open={Boolean(viewingQr)}
+          onClose={() => setViewingQr(null)}
+          qrUrl={viewingQr.qrUrl}
+          bankName={viewingQr.bankName}
+          bankCode={viewingQr.bankCode}
+          accountNo={viewingQr.accountNo}
+          accountName={viewingQr.accountName}
+          amount={viewingQr.amount}
+          currency={viewingQr.currency}
+          memo={viewingQr.memo}
+          receiverName={viewingQr.receiverName}
+        />
       )}
     </div>
   )

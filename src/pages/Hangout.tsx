@@ -35,7 +35,6 @@ export function HangoutPage() {
   const [guestsOpen, setGuestsOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [copiedShare, setCopiedShare] = useState(false)
-  const [rev, setRev] = useState(0)
 
   const { data, loading, error, reload } = useAsync(async () => {
     if (!id) return null
@@ -64,7 +63,6 @@ export function HangoutPage() {
   }, [id, userId])
 
   const refresh = () => {
-    setRev((r) => r + 1)
     reload()
   }
 
@@ -314,9 +312,9 @@ export function HangoutPage() {
         ]}
       />
 
-      {tab === 'bookmarks' && <BookmarksTab key={rev} data={shared} />}
-      {tab === 'spend' && <SpendTab key={rev} data={shared} />}
-      {tab === 'recap' && <RecapTab key={rev} data={shared} />}
+      {tab === 'bookmarks' && <BookmarksTab data={shared} />}
+      {tab === 'spend' && <SpendTab data={shared} />}
+      {tab === 'recap' && <RecapTab data={shared} />}
 
       <QRModal open={qrOpen} onClose={() => setQrOpen(false)} hangout={hangout} />
       {me && <ActivityLogModal open={logOpen} onClose={() => setLogOpen(false)} hangoutId={hangout.id} />}
