@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, QrCode, Receipt, SearchX, Share2, UserCheck, Users } from 'lucide-react'
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy, Download, QrCode, Receipt, SearchX, Share2, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { BillViewerModal } from '../components/hangout/BillViewerModal'
@@ -437,6 +437,23 @@ function ShareLinkButton() {
   )
 }
 
+async function downloadQrImage(url: string, filename = 'vietqr.png') {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename.toLowerCase().replace(/\s+/g, '-')
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+  } catch {
+    window.open(url, '_blank')
+  }
+}
+
 function CalcLine({
   label,
   amount,
@@ -761,29 +778,44 @@ function PersonRow({
 
                     {hasBank && qrUrl && (
                       <div className="flex items-center gap-3 pt-2 border-t border-line/30">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setViewingQr({
-                              qrUrl,
-                              bankName: receiver?.bank_name || receiver?.bank_code || '',
-                              bankCode: receiver?.bank_code || '',
-                              accountNo: receiver?.bank_account_no || '',
-                              accountName: receiver?.bank_account_name,
-                              amount: s.amount,
-                              currency,
-                              memo,
-                              receiverName: nameOf(s.toId, s.toName),
-                            })
-                          }
-                          className="group relative shrink-0 rounded-2xl border border-line/50 bg-white p-1.5 shadow-xs hover:shadow-md transition cursor-pointer"
-                          title="Tap to zoom VietQR"
-                        >
-                          <img src={qrUrl} alt="VietQR" className="h-20 w-20 object-contain" />
-                          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px] text-[10px] font-black gap-1">
-                            <QrCode size={12} /> Zoom
-                          </span>
-                        </button>
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setViewingQr({
+                                qrUrl,
+                                bankName: receiver?.bank_name || receiver?.bank_code || '',
+                                bankCode: receiver?.bank_code || '',
+                                accountNo: receiver?.bank_account_no || '',
+                                accountName: receiver?.bank_account_name,
+                                amount: s.amount,
+                                currency,
+                                memo,
+                                receiverName: nameOf(s.toId, s.toName),
+                              })
+                            }
+                            className="group relative rounded-2xl border border-line/50 bg-white p-1.5 shadow-xs hover:shadow-md transition cursor-pointer"
+                            title="Tap to zoom VietQR"
+                          >
+                            <img src={qrUrl} alt="VietQR" className="h-20 w-20 object-contain" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px] text-[10px] font-black gap-1">
+                              <QrCode size={12} /> Zoom
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void downloadQrImage(qrUrl, `vietqr-${nameOf(s.toId, s.toName)}.png`)
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-muted hover:text-primary hover:bg-surface-2 transition active:scale-95 cursor-pointer"
+                            title="Download QR image"
+                            aria-label="Download QR image"
+                          >
+                            <Download size={11} />
+                            <span>Save QR</span>
+                          </button>
+                        </div>
                         <div className="min-w-0 flex-1 text-xs space-y-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="rounded bg-primary-soft text-primary font-black px-1.5 py-0.5 text-[10px] border border-primary/20">
