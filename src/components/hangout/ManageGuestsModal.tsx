@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useSavedBankAccounts } from '../../lib/useSavedBankAccounts'
 import type { Member, SavedBankAccount } from '../../types'
 import { Avatar, Button, ErrorNote, Input, Modal, cn } from '../ui'
+import { errorMessage } from '../../lib/errors'
 
 interface Props {
   open: boolean
@@ -46,7 +47,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
       setNewName('')
       reload()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(errorMessage(e))
     } finally {
       setBusy(false)
     }
@@ -63,7 +64,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
       .from('hangout_members')
       .update({ display_name: clean })
       .eq('id', member.id)
-    if (error) setError(error.message)
+    if (error) setError(errorMessage(error))
     else reload()
   }
 
@@ -75,7 +76,7 @@ export function ManageGuestsModal({ open, onClose, hangoutId, members, reload }:
     )
       return
     const { error } = await supabase.from('hangout_members').delete().eq('id', member.id)
-    if (error) setError(error.message)
+    if (error) setError(errorMessage(error))
     else reload()
   }
 
