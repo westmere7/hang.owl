@@ -86,24 +86,31 @@ export function RecapTab({ data }: { data: HangoutData }) {
 
   const { accounts } = useSavedBankAccounts()
 
-  // In-memory bank resolution: if a member in hangout_members doesn't have bank details yet,
-  // resolve it immediately from saved_bank_accounts (matching profile_id or display_name)
+  // In-memory bank resolution: if a member in hangout_members has a matching saved bank account
+  // in the user's settings, resolve it immediately from saved_bank_accounts
   const resolvedMembers = useMemo(() => {
     return members.map((m) => {
-      if (m.bank_code && m.bank_account_no) return m
-      const match = accounts.find(
-        (a) =>
-          (m.profile_id && a.user_id === m.profile_id) ||
-          a.name.trim().toLowerCase() === m.display_name.trim().toLowerCase(),
-      )
-      if (!match) return m
-      return {
-        ...m,
-        bank_code: match.bank_code,
-        bank_name: match.bank_name,
-        bank_account_no: match.account_no,
-        bank_account_name: match.account_name,
+      const match = accounts.find((a) => {
+        const aName = a.name.trim().toLowerCase()
+        const mName = m.display_name.trim().toLowerCase()
+        if (aName === mName) return true
+        if (m.profile_id && a.user_id === m.profile_id) {
+          return aName === 'myself' || aName === 'me' || aName === mName
+        }
+        return false
+      })
+
+      if (match) {
+        return {
+          ...m,
+          bank_code: match.bank_code,
+          bank_name: match.bank_name,
+          bank_account_no: match.account_no,
+          bank_account_name: match.account_name,
+        }
       }
+
+      return m
     })
   }, [members, accounts])
 
