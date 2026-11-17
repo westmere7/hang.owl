@@ -511,7 +511,7 @@ function PersonRow({
     bankCode: string
     accountNo: string
     accountName?: string | null
-    amount: number
+    amount: number | null
     currency: string
     memo: string
     receiverName: string
@@ -547,19 +547,12 @@ function PersonRow({
 
   // Build target QR data for header QR button
   const firstTransfer = pays[0]
-  const targetReceiver = firstTransfer
-    ? members.find((m) => m.id === firstTransfer.toId)
-    : isOverrideCollector
-      ? members.find((m) => m.id === row.memberId)
-      : gets
-        ? members.find((m) => m.id === row.memberId)
-        : null
-
-  const targetAmount = firstTransfer ? firstTransfer.amount : Math.abs(row.balance)
+  // Only people who have to pay get a QR (pre-filled with their amount and
+  // name); receivers and settled members have nobody to pay, so no button.
+  const targetReceiver = firstTransfer ? members.find((m) => m.id === firstTransfer.toId) : null
+  const targetAmount = firstTransfer ? firstTransfer.amount : null
   const targetMemo = formatTransferMemo(hangoutName, row.name)
-  const targetReceiverName = firstTransfer
-    ? nameOf(firstTransfer.toId, firstTransfer.toName)
-    : row.name
+  const targetReceiverName = firstTransfer ? nameOf(firstTransfer.toId, firstTransfer.toName) : row.name
 
   const hasBank = Boolean(targetReceiver?.bank_code && targetReceiver?.bank_account_no)
   const qrUrl = hasBank
@@ -567,7 +560,7 @@ function PersonRow({
         bankCode: targetReceiver!.bank_code!,
         accountNo: targetReceiver!.bank_account_no!,
         accountName: targetReceiver!.bank_account_name,
-        amount: currency === 'VND' ? Math.round(targetAmount) : null,
+        amount: currency === 'VND' && targetAmount !== null ? Math.round(targetAmount) : null,
         memo: targetMemo,
         template: 'compact2',
       })
@@ -673,7 +666,7 @@ function PersonRow({
             <QrCode size={16} />
           </button>
         ) : (
-          (owes || gets) && (
+          owes && (
             <div onClick={(e) => e.stopPropagation()}>
               <CopyBtn value={plainAmount} />
             </div>
