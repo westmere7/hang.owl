@@ -45,6 +45,8 @@ interface BillData {
   deposit_holder_id: string | null
   payment_receiver_id?: string | null
   bill_paths?: string[] | null
+  /** Transfers marked paid in the app. Absent until migration 0015 is applied. */
+  settlement_marks?: { from_member_id: string; to_member_id: string }[] | null
   members: BillMember[]
   spends: BillSpend[]
 }
@@ -164,6 +166,12 @@ export function BillRecapPage() {
           amount: p.balance,
         }))
 
+  // "Paid" marks, keyed by the from->to pair (same key the app's Recap tab uses).
+  // null = the backend doesn't report them yet, so show no status at all.
+  const paidKeys = data.settlement_marks
+    ? new Set(data.settlement_marks.map((m) => `${m.from_member_id}->${m.to_member_id}`))
+    : null
+
   // Who pays first, then who's owed, then settled — most actionable on top.
   const rank = (r: MemberRecap) => (r.balance > 0.005 ? 0 : r.balance < -0.005 ? 1 : 2)
   const rows = [...recap.rows].sort((a, b) => rank(a) - rank(b) || Math.abs(b.balance) - Math.abs(a.balance))
@@ -267,6 +275,7 @@ export function BillRecapPage() {
               currency={cur}
               decimals={decimals}
               settlements={activeSettlements}
+              paidKeys={paidKeys}
               memberName={memberName}
               members={data.members}
               hangoutName={data.name}
@@ -485,6 +494,7 @@ function PersonRow({
   currency,
   decimals,
   settlements,
+  paidKeys,
   memberName,
   members,
   hangoutName,
@@ -497,6 +507,8 @@ function PersonRow({
   currency: string
   decimals: number
   settlements: Settlement[]
+  /** from->to pairs marked paid in the app; null when status is unavailable. */
+  paidKeys: Set<string> | null
   memberName: Map<string, string>
   members: BillMember[]
   hangoutName: string
@@ -529,6 +541,15 @@ function PersonRow({
   const pays = settlements.filter((s) => s.fromId === row.memberId)
   const getsFrom = settlements.filter((s) => s.toId === row.memberId)
   const plainAmount = Math.abs(row.balance).toFixed(decimals)
+
+  // Payment status, from the marks set in the app's Recap tab.
+  const isPaid = (s: Settlement) => paidKeys?.has(`${s.fromId}->${s.toId}`) ?? false
+  const hasPaid = pays.length > 0 && pays.every(isPaid)
+  const incomingTotal = getsFrom.reduce((sum, s) => sum + s.amount, 0)
+  const receivedPct =
+    incomingTotal > 0
+      ? Math.round((getsFrom.filter(isPaid).reduce((sum, s) => sum + s.amount, 0) / incomingTotal) * 100)
+      : null
 
   const nameOf = (id: string, fallback: string) => memberName.get(id) ?? fallback
   const label = isOverrideCollector
@@ -647,8 +668,24 @@ function PersonRow({
           <p className={cn('text-xs font-black uppercase tracking-wider', tone)}>{label}</p>
         </div>
 
-        <span className={cn('shrink-0 text-xl font-black tabular-nums', tone)}>
-          {owes || gets ? fmtMoney(Math.abs(row.balance), currency) : '—'}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {/* Paid / not-yet-paid marker for people who have to pay */}
+          {paidKeys && pays.length > 0 && (
+            <span
+              role="img"
+              aria-label={hasPaid ? 'Paid' : 'Not paid yet'}
+              title={hasPaid ? 'Paid' : 'Not paid yet'}
+              className={cn(
+                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[1.5px]',
+                hasPaid ? 'border-success bg-success text-white' : 'border-line text-transparent',
+              )}
+            >
+              <Check size={10} strokeWidth={3.5} />
+            </span>
+          )}
+          <span className={cn('text-xl font-black tabular-nums', tone)}>
+            {owes || gets ? fmtMoney(Math.abs(row.balance), currency) : '—'}
+          </span>
         </span>
 
         {/* QR Button (or Copy button if no QR) */}
@@ -671,6 +708,20 @@ function PersonRow({
               <CopyBtn value={plainAmount} />
             </div>
           )
+        )}
+
+        {/* Receivers: share of incoming money already paid, sized like the QR
+            button so the amount column stays aligned with the payers'. */}
+        {pays.length === 0 && getsFrom.length > 0 && (
+          <span
+            title={receivedPct !== null && paidKeys ? `${receivedPct}% received` : undefined}
+            className={cn(
+              'flex h-[34px] w-[34px] shrink-0 items-center justify-center text-[11px] font-black tabular-nums',
+              receivedPct === 100 ? 'text-success' : 'text-muted',
+            )}
+          >
+            {paidKeys && receivedPct !== null ? `${receivedPct}%` : ''}
+          </span>
         )}
 
         <div
