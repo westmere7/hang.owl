@@ -741,7 +741,9 @@ function PersonRow({
           )}
 
           {/* Who to pay — with payment info and VietQR */}
-          {!isOverrideCollector && owes && pays.length > 0 && (
+          {/* With a single payee the header already says who and how much, so
+              the "Pay X" line is only shown to tell several payees apart. */}
+          {!isOverrideCollector && owes && (pays.length > 1 || (pays.length === 1 && hasBank)) && (
             <div className="space-y-2">
               <p className="text-[11px] font-black uppercase tracking-wider text-muted">
                 {pays.length === 1 ? 'Payment details' : 'Who to pay'}
@@ -763,21 +765,28 @@ function PersonRow({
 
                 return (
                   <div key={i} className="rounded-2xl bg-surface/85 p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs font-black text-ink">
-                        <ArrowRight size={13} className="shrink-0 text-danger" />
-                        <span>Pay {nameOf(s.toId, s.toName)}</span>
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black tabular-nums text-danger">
-                          {fmtMoney(s.amount, currency)}
+                    {pays.length > 1 && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-ink">
+                          <ArrowRight size={13} className="shrink-0 text-danger" />
+                          <span>Pay {nameOf(s.toId, s.toName)}</span>
                         </span>
-                        <CopyBtn value={s.amount.toFixed(decimals)} />
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black tabular-nums text-danger">
+                            {fmtMoney(s.amount, currency)}
+                          </span>
+                          <CopyBtn value={s.amount.toFixed(decimals)} />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {hasBank && qrUrl && (
-                      <div className="flex items-center gap-3 pt-2 border-t border-line/30">
+                      <div
+                        className={cn(
+                          'flex items-center gap-3',
+                          pays.length > 1 && 'pt-2 border-t border-line/30',
+                        )}
+                      >
                         <div className="flex flex-col items-center gap-1 shrink-0">
                           <button
                             type="button"
